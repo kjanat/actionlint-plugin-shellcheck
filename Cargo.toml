@@ -1,0 +1,26 @@
+[package]
+name         = "actionlint-plugin-shellcheck"
+version      = "0.1.0"
+edition      = "2024"
+rust-version = "1.99"
+description  = "ShellCheck for actionlint run steps as a WebAssembly component, built on shellcheck-rs"
+repository   = "https://github.com/kjanat/actionlint-plugin-shellcheck"
+license      = "GPL-3.0-or-later"
+publish      = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+regex         = "1"
+serde         = { version = "1", features = ["derive"] }
+serde_json    = "1"
+shellcheck-rs = { git = "https://github.com/kjanat/shellcheck-rs", tag = "rshellcheck-v1.0.0" }
+wit-bindgen   = "0.63"
+
+[profile.release]
+opt-level     = "s"
+strip         = true
+lto           = true
+panic         = "abort"
+codegen-units = 1

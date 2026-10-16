@@ -1,0 +1,3 @@
+/target
+/*.wasm
+/tests/host/testdata/*.wasm

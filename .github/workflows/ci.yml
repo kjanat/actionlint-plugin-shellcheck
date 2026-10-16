@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: tests/host/go.mod
+          cache-dependency-path: tests/host/go.sum
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Unit tests
+        run: cargo test --locked
+      - name: Lints
+        run: |
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo fmt --check
+      - name: Build the component
+        run: cargo build --locked --release --target wasm32-wasip2
+      - name: Host integration
+        run: go -C tests/host test ./...
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: actionlint_plugin_shellcheck.wasm
+          path: target/wasm32-wasip2/release/actionlint_plugin_shellcheck.wasm
