@@ -9,12 +9,22 @@ wit_bindgen::generate!({
 
 use std::rc::Rc;
 
-use exports::kjanat::actionlint::analyzer::{
-    Descriptor, Diagnostic, Edit, Fact, Fix, Guest, Input, Position, Script,
-};
-use shellcheck_rs::interface::{CheckSpec, NoExternalSources, PositionedComment, Replacement};
+use exports::kjanat::actionlint::analyzer::Descriptor;
+use exports::kjanat::actionlint::analyzer::Diagnostic;
+use exports::kjanat::actionlint::analyzer::Edit;
+use exports::kjanat::actionlint::analyzer::Fact;
+use exports::kjanat::actionlint::analyzer::Fix;
+use exports::kjanat::actionlint::analyzer::Guest;
+use exports::kjanat::actionlint::analyzer::Input;
+use exports::kjanat::actionlint::analyzer::Position;
+use exports::kjanat::actionlint::analyzer::Script;
+use shellcheck_rs::interface::CheckSpec;
+use shellcheck_rs::interface::NoExternalSources;
+use shellcheck_rs::interface::PositionedComment;
+use shellcheck_rs::interface::Replacement;
 
-use options::{Options, parse_shell};
+use options::Options;
+use options::parse_shell;
 
 pub const NAME: &str = "shellcheck-rs";
 pub const FILENAME: &str = "actionlint.sh";
@@ -260,8 +270,12 @@ fn position(script: &Script, line: u32, column: i64, exclusive: bool) -> Option<
 
 #[cfg(test)]
 mod tests {
-    use super::exports::kjanat::actionlint::analyzer::{Position, Runtime, Script, Span};
-    use super::{Options, analyze_script};
+    use super::Options;
+    use super::analyze_script;
+    use super::exports::kjanat::actionlint::analyzer::Position;
+    use super::exports::kjanat::actionlint::analyzer::Runtime;
+    use super::exports::kjanat::actionlint::analyzer::Script;
+    use super::exports::kjanat::actionlint::analyzer::Span;
 
     fn script(text: &str, line: u32, column: u32, shell: Option<&str>) -> Script {
         let spans = text

@@ -1,0 +1,31 @@
+#:schema https://mise.jdx.dev/schema/mise.json
+#:tombi toml-version = "v1.1.0"
+
+[tools]
+"github:kjanat/runner"    = "0.28.0"
+"github:rvben/rumdl"      = "0.2.79"
+"github:tombi-toml/tombi" = "1.8.4"
+deno                      = "2.9.7"
+go                        = "1.27.2"
+golangci-lint             = "2.14.0"
+
+[tools."github:WebAssembly/binaryen"]
+version        = "133"
+version_prefix = "version_"
+filter_bins    = ["wasm-opt"]
+
+[tools."github:kjanat/dprint"]
+version = "0.59.0-kjanat"
+depends = ["github:tombi-toml/tombi"]
+
+[deps.deno]
+auto    = true
+sources = ["deno.lock", "scripts/**/*.ts", "tests/*.ts"]
+run     = "deno install"
+
+[settings]
+experimental        = true
+minimum_release_age = "0s"
+
+[env]
+RUSTUP_AUTO_INSTALL = 1

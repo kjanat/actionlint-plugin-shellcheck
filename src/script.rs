@@ -168,7 +168,11 @@ pub fn realign(lines: &[&str], line: i64, column: i64) -> i64 {
 
 #[cfg(test)]
 mod tests {
-    use super::{header, header_dialect, prepare, real_column, sanitize_expressions};
+    use super::header;
+    use super::header_dialect;
+    use super::prepare;
+    use super::real_column;
+    use super::sanitize_expressions;
 
     #[test]
     fn header_detects_shell_directives() {

@@ -1,5 +1,6 @@
 use serde::Deserialize;
-use shellcheck_rs::{Severity, Shell};
+use shellcheck_rs::Severity;
+use shellcheck_rs::Shell;
 
 #[derive(Deserialize, Default)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields, default)]
@@ -82,7 +83,8 @@ impl Options {
 
 #[cfg(test)]
 mod tests {
-    use super::{Options, parse_code};
+    use super::Options;
+    use super::parse_code;
     use shellcheck_rs::Severity;
 
     #[test]
