@@ -17,6 +17,7 @@ use exports::kjanat::actionlint::analyzer::Fix;
 use exports::kjanat::actionlint::analyzer::Guest;
 use exports::kjanat::actionlint::analyzer::Input;
 use exports::kjanat::actionlint::analyzer::Position;
+use exports::kjanat::actionlint::analyzer::Revision;
 use exports::kjanat::actionlint::analyzer::Script;
 use shellcheck_rs::interface::CheckSpec;
 use shellcheck_rs::interface::NoExternalSources;
@@ -35,6 +36,18 @@ struct Plugin;
 impl Guest for Plugin {
     fn describe() -> Descriptor {
         Descriptor {
+            description: env!("CARGO_PKG_DESCRIPTION").to_string(),
+            category: "correctness".to_string(),
+            subcategory: "scripts".to_string(),
+            maturity: "stable".to_string(),
+            provider: "shellcheck-rs".to_string(),
+            recommended: true,
+            explanation: String::new(),
+            help: String::new(),
+            documentation_url: env!("CARGO_PKG_REPOSITORY").to_string(),
+            fix_availability: "unsafe".to_string(),
+            options_schema: String::new(),
+            examples: Vec::new(),
             name: NAME.to_string(),
             requires: vec![Fact::Scripts, Fact::Invocations, Fact::Execution],
         }
@@ -151,6 +164,14 @@ pub fn analyze_script(script: &Script, options: &Options) -> Result<Vec<Diagnost
         let start = position(script, line, column, false).unwrap_or(script.start);
         let end = position(script, end_line, end_column, true).unwrap_or(start);
         findings.push(Diagnostic {
+            reference: Some(script.reference.clone()),
+            explanation: String::new(),
+            help: String::new(),
+            documentation_url: format!(
+                "https://www.shellcheck.net/wiki/SC{}",
+                comment.comment.code
+            ),
+            related: Vec::new(),
             rule: String::new(),
             code: format!("SC{}", comment.comment.code),
             severity: level.to_string(),
@@ -191,6 +212,15 @@ fn fixes(
     }
     edits.sort_by_key(|edit| (edit.start.line, edit.start.column));
     vec![Fix {
+        applicability: "unsafe".to_string(),
+        revisions: if script.reference.revision.is_empty() {
+            Vec::new()
+        } else {
+            vec![Revision {
+                path: script.path.clone(),
+                digest: script.reference.revision.clone(),
+            }]
+        },
         description: comment.comment.message.clone(),
         edits,
     }]
@@ -293,6 +323,12 @@ mod tests {
             })
             .collect();
         Script {
+            reference: super::exports::kjanat::actionlint::analyzer::SourceReference {
+                document: String::new(),
+                revision: String::new(),
+                node: String::new(),
+                address: String::new(),
+            },
             job_id: "build".to_string(),
             step_id: String::new(),
             text: text.to_string(),
@@ -313,6 +349,28 @@ mod tests {
 
     fn defaults() -> Options {
         Options::parse("").unwrap_or_else(|error| panic!("{error}"))
+    }
+
+    #[test]
+    fn findings_and_fixes_preserve_source_identity() {
+        let mut source = script("echo $x", 7, 14, Some("bash"));
+        source.path = "workflow.yml".to_string();
+        source.reference.document = source.path.clone();
+        source.reference.revision = "revision-from-host".to_string();
+        source.reference.node = "run-node".to_string();
+        source.reference.address = "jobs.build.steps[0].run".to_string();
+        let findings =
+            analyze_script(&source, &defaults()).unwrap_or_else(|error| panic!("{error}"));
+        let reference = findings[0].reference.as_ref().expect("source reference");
+        assert_eq!(reference.document, source.path);
+        assert_eq!(reference.node, source.reference.node);
+        assert_eq!(reference.revision, source.reference.revision);
+        assert_eq!(reference.address, source.reference.address);
+        let fix = &findings[0].fixes[0];
+        assert_eq!(fix.applicability, "unsafe");
+        assert_eq!(fix.revisions.len(), 1);
+        assert_eq!(fix.revisions[0].path, source.path);
+        assert_eq!(fix.revisions[0].digest, source.reference.revision);
     }
 
     #[test]
