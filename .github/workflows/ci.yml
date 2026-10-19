@@ -14,8 +14,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
+        with: { persist-credentials: false }
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: tests/host/go.mod
@@ -23,16 +22,19 @@ jobs:
       - name: Install the pinned Rust toolchain
         run: rustup toolchain install
       - name: Unit tests
-        run: cargo test --locked
+        run: cargo test --locked --all-features
       - name: Lints
-        run: |
-          cargo clippy --locked --all-targets -- -D warnings
+        run: cargo clippy --locked --all-targets --all-features -- -Dwarnings;
           cargo fmt --check
       - name: Build the component
-        run: cargo build --locked --release --target wasm32-wasip2
+        run: cargo build --locked --release --lib --target wasm32-wasip2
+      - name: Package the component and static metadata
+        run: cargo run --locked --features package --bin package --
+          target/wasm32-wasip2/release/actionlint_plugin_shellcheck.wasm artifacts
       - name: Host integration
         run: go -C tests/host test ./...
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: actionlint_plugin_shellcheck.wasm
-          path: target/wasm32-wasip2/release/actionlint_plugin_shellcheck.wasm
+          name: actionlint-plugin-shellcheck
+          path: artifacts/
+          if-no-files-found: error

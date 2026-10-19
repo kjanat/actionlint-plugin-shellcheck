@@ -12,6 +12,43 @@ struct Raw {
     severity: Option<String>,
 }
 
+pub fn schema() -> serde_json::Value {
+    let optional_names: Vec<_> = std::iter::once("all")
+        .chain(
+            shellcheck_rs::optional_checks()
+                .iter()
+                .map(|check| check.name),
+        )
+        .collect();
+    serde_json::json!({
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "ShellCheck plugin options",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+            "shell": {
+                "description": "Override an already supported shell's inferred dialect, unless a header directive selects one.",
+                "type": "string",
+                "enum": ["bash", "sh", "dash", "ksh", "busybox"]
+            },
+            "disable": {
+                "description": "Diagnostic codes to suppress, with optional SC prefix; these are not optional-check names.",
+                "examples": [["SC2086", "2154"]],
+                "type": "array",
+                "items": {"type": "string", "pattern": "^(SC)?[0-9]+$"}
+            },
+            "enable": {
+                "description": "Optional checks to activate by exact name, or all. Numeric diagnostic codes are not accepted.",
+                "examples": [["require-variable-braces", "clarify-parse-errors"], ["all"]],
+                "type": "array",
+                "items": {"type": "string", "enum": optional_names}
+            },
+            "extended-analysis": {"type": "boolean"},
+            "severity": {"type": "string", "enum": ["error", "warning", "info", "style"]}
+        }
+    })
+}
+
 pub struct Options {
     pub shell: Option<String>,
     pub disable: Vec<i64>,
@@ -59,6 +96,17 @@ impl Options {
                 parse_code(code)
                     .ok_or_else(|| format!("options: disable entry {code:?} is not an SC code"))?,
             );
+        }
+        for name in &raw.enable {
+            if name != "all"
+                && !shellcheck_rs::optional_checks()
+                    .iter()
+                    .any(|check| check.name == name)
+            {
+                return Err(format!(
+                    "options: enable entry {name:?} is not a supported optional check name or all"
+                ));
+            }
         }
         let severity = match raw.severity.as_deref() {
             None | Some("style") => Severity::StyleC,
@@ -109,6 +157,9 @@ mod tests {
             (r#"{"disable": ["bad"]}"#, "disable entry \"bad\""),
             (r#"{"severity": "loud"}"#, "severity \"loud\""),
             (r#"{"unknown": 1}"#, "unknown field"),
+            (r#"{"enable": ["require-variable-brace"]}"#, "enable entry"),
+            (r#"{"enable": ["SC2086"]}"#, "enable entry"),
+            (r#"{"enable": ["2086"]}"#, "enable entry"),
             ("not json", "options:"),
         ] {
             let error = Options::parse(source).err().unwrap_or_default();
@@ -116,5 +167,21 @@ mod tests {
         }
         assert_eq!(parse_code("SC1"), Some(1));
         assert_eq!(parse_code("SC"), None);
+    }
+
+    #[test]
+    fn schema_and_validation_use_the_engine_catalogue() {
+        let schema = super::schema();
+        let names: Vec<String> =
+            serde_json::from_value(schema["properties"]["enable"]["items"]["enum"].clone())
+                .expect("optional-check enum");
+        assert_eq!(names.len(), shellcheck_rs::optional_checks().len() + 1);
+        assert_eq!(names[0], "all");
+        for check in shellcheck_rs::optional_checks() {
+            assert!(names.iter().any(|name| name == check.name));
+        }
+        let options = serde_json::json!({"enable": names}).to_string();
+        assert!(Options::parse(&options).is_ok());
+        assert!(Options::parse(r#"{"enable":["all"]}"#).is_ok());
     }
 }

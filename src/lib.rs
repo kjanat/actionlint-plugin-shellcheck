@@ -16,9 +16,11 @@ use exports::kjanat::actionlint::analyzer::Fact;
 use exports::kjanat::actionlint::analyzer::Fix;
 use exports::kjanat::actionlint::analyzer::Guest;
 use exports::kjanat::actionlint::analyzer::Input;
+use exports::kjanat::actionlint::analyzer::Outcome;
 use exports::kjanat::actionlint::analyzer::Position;
 use exports::kjanat::actionlint::analyzer::Revision;
 use exports::kjanat::actionlint::analyzer::Script;
+use shellcheck_rs::interface::CheckResult;
 use shellcheck_rs::interface::CheckSpec;
 use shellcheck_rs::interface::NoExternalSources;
 use shellcheck_rs::interface::PositionedComment;
@@ -35,31 +37,74 @@ struct Plugin;
 
 impl Guest for Plugin {
     fn describe() -> Descriptor {
-        Descriptor {
-            description: env!("CARGO_PKG_DESCRIPTION").to_string(),
-            category: "correctness".to_string(),
-            subcategory: "scripts".to_string(),
-            maturity: "stable".to_string(),
-            provider: "shellcheck-rs".to_string(),
-            recommended: true,
-            explanation: String::new(),
-            help: String::new(),
-            documentation_url: env!("CARGO_PKG_REPOSITORY").to_string(),
-            fix_availability: "unsafe".to_string(),
-            options_schema: String::new(),
-            examples: Vec::new(),
-            name: NAME.to_string(),
-            requires: vec![Fact::Scripts, Fact::Invocations, Fact::Execution],
-        }
+        descriptor()
     }
 
-    fn analyze(input: Input) -> Result<Vec<Diagnostic>, String> {
-        let options = Options::parse(&input.options)?;
-        let mut findings = Vec::new();
-        for script in input.scripts.iter().chain(input.invoked.iter()) {
-            findings.extend(analyze_script(script, &options)?);
+    fn analyze(input: Input) -> Outcome {
+        let options = match Options::parse(&input.options) {
+            Ok(options) => options,
+            Err(error) => {
+                return Outcome {
+                    diagnostics: Vec::new(),
+                    error: Some(error),
+                };
+            }
+        };
+        combine(
+            input
+                .scripts
+                .into_iter()
+                .chain(input.invoked)
+                .map(|mut script| {
+                    if script.path.is_empty() {
+                        script.path.clone_from(&input.path);
+                    }
+                    analyze_script(&script, &options)
+                }),
+        )
+    }
+}
+
+/// Rule metadata shared by the component and its static package declaration.
+pub fn descriptor() -> Descriptor {
+    Descriptor {
+        description: env!("CARGO_PKG_DESCRIPTION").to_string(),
+        category: "correctness".to_string(),
+        subcategory: "scripts".to_string(),
+        maturity: "experimental".to_string(),
+        provider: "shellcheck-rs".to_string(),
+        recommended: true,
+        explanation: concat!(
+            "Checks supported shell snippets with shellcheck-rs. ",
+            "External sources and rc files are not read; fixes require review."
+        )
+        .to_string(),
+        help: concat!(
+            "Configure shell, disable, enable, extended-analysis and severity under ",
+            "lint.rules.plugins.shellcheck-rs.options."
+        )
+        .to_string(),
+        documentation_url: env!("CARGO_PKG_REPOSITORY").to_string(),
+        fix_availability: "unsafe".to_string(),
+        options_schema: options::schema().to_string(),
+        examples: Vec::new(),
+        name: NAME.to_string(),
+        requires: vec![Fact::Scripts, Fact::Invocations, Fact::Execution],
+    }
+}
+
+fn combine(outcomes: impl IntoIterator<Item = Outcome>) -> Outcome {
+    let mut diagnostics = Vec::new();
+    let mut errors = Vec::new();
+    for outcome in outcomes {
+        diagnostics.extend(outcome.diagnostics);
+        if let Some(error) = outcome.error {
+            errors.push(error);
         }
-        Ok(findings)
+    }
+    Outcome {
+        diagnostics,
+        error: (!errors.is_empty()).then(|| errors.join("\n")),
     }
 }
 
@@ -83,7 +128,7 @@ fn shell_of(script: &Script) -> (String, bool) {
     }
 }
 
-pub fn analyze_script(script: &Script, options: &Options) -> Result<Vec<Diagnostic>, String> {
+pub fn analyze_script(script: &Script, options: &Options) -> Outcome {
     let (name, implicit) = shell_of(script);
     let (inferred, mut setup) = shell::analysis(&name, implicit);
     let (header, _, directive_shell) = script::header(&script.text);
@@ -92,7 +137,10 @@ pub fn analyze_script(script: &Script, options: &Options) -> Result<Vec<Diagnost
             "{}:{}: skip: no supported dialect for shell {name:?}",
             script.start.line, script.start.column
         ));
-        return Ok(Vec::new());
+        return Outcome {
+            diagnostics: Vec::new(),
+            error: None,
+        };
     }
     let mut dialect = inferred.clone();
     if directive_shell {
@@ -128,10 +176,22 @@ pub fn analyze_script(script: &Script, options: &Options) -> Result<Vec<Diagnost
         ..CheckSpec::default()
     };
     let result = shellcheck_rs::checker::check_script_with(Rc::new(NoExternalSources), &spec);
+    map_result(script, &prepared, &source, &setup, &name, result)
+}
+
+fn map_result(
+    script: &Script,
+    prepared: &script::Prepared,
+    source: &str,
+    setup: &str,
+    name: &str,
+    result: CheckResult,
+) -> Outcome {
+    let mut errors = Vec::new();
     if let Some(error) = &result.dataflow_error {
-        debug(&format!(
-            "{}:{}: dataflow analysis stopped: {error:?}",
-            script.start.line, script.start.column
+        errors.push(format!(
+            "{}:{}:{}: dataflow analysis stopped: {error:?}",
+            script.path, script.start.line, script.start.column
         ));
     }
     let lines = prepared.lines();
@@ -147,10 +207,15 @@ pub fn analyze_script(script: &Script, options: &Options) -> Result<Vec<Diagnost
             {
                 continue;
             }
-            return Err(format!(
-                "startup options {setup:?} for shell {name:?}: SC{}: {}",
-                comment.comment.code, comment.comment.message
+            errors.push(format!(
+                "{}:{}:{}: startup options {setup:?} for shell {name:?}: SC{}: {}",
+                script.path,
+                script.start.line,
+                script.start.column,
+                comment.comment.code,
+                comment.comment.message
             ));
+            continue;
         }
         let column = script::realign(&lines, comment.start.line, comment.start.column);
         let end_line = prepared.original_line(comment.end.line);
@@ -182,10 +247,13 @@ pub fn analyze_script(script: &Script, options: &Options) -> Result<Vec<Diagnost
             path: script.path.clone(),
             start,
             end,
-            fixes: fixes(script, &prepared, &lines, &source, comment),
+            fixes: fixes(script, prepared, &lines, source, comment),
         });
     }
-    Ok(findings)
+    Outcome {
+        diagnostics: findings,
+        error: (!errors.is_empty()).then(|| errors.join("\n")),
+    }
 }
 
 fn fixes(
@@ -301,11 +369,21 @@ fn position(script: &Script, line: u32, column: i64, exclusive: bool) -> Option<
 #[cfg(test)]
 mod tests {
     use super::Options;
-    use super::analyze_script;
     use super::exports::kjanat::actionlint::analyzer::Position;
     use super::exports::kjanat::actionlint::analyzer::Runtime;
     use super::exports::kjanat::actionlint::analyzer::Script;
     use super::exports::kjanat::actionlint::analyzer::Span;
+
+    fn analyze_script(
+        script: &Script,
+        options: &Options,
+    ) -> Result<Vec<super::Diagnostic>, String> {
+        let outcome = super::analyze_script(script, options);
+        match outcome.error {
+            Some(error) => Err(error),
+            None => Ok(outcome.diagnostics),
+        }
+    }
 
     fn script(text: &str, line: u32, column: u32, shell: Option<&str>) -> Script {
         let spans = text
@@ -349,6 +427,109 @@ mod tests {
 
     fn defaults() -> Options {
         Options::parse("").unwrap_or_else(|error| panic!("{error}"))
+    }
+
+    fn input(scripts: Vec<Script>, invoked: Vec<Script>) -> super::Input {
+        super::Input {
+            reference: script("", 1, 1, None).reference,
+            path: "workflow.yml".to_string(),
+            content: String::new(),
+            kind: "workflow".to_string(),
+            parse_status: "complete".to_string(),
+            available: Vec::new(),
+            options: String::new(),
+            scripts,
+            invoked,
+            mappings: Vec::new(),
+            dependencies: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn document_paths_bind_fixes_without_rewriting_invoked_sources() {
+        use super::Guest;
+        let mut declared = script("echo $x", 7, 14, Some("bash"));
+        declared.reference.revision = "workflow-revision".to_string();
+        let mut invoked = script("echo $x", 3, 5, Some("bash"));
+        invoked.path = "actions/example/action.yml".to_string();
+        invoked.reference.revision = "action-revision".to_string();
+        let outcome = super::Plugin::analyze(input(vec![declared], vec![invoked]));
+        assert!(outcome.error.is_none(), "{:?}", outcome.error);
+        assert_eq!(outcome.diagnostics.len(), 2);
+        for (finding, path, revision) in [
+            (&outcome.diagnostics[0], "workflow.yml", "workflow-revision"),
+            (
+                &outcome.diagnostics[1],
+                "actions/example/action.yml",
+                "action-revision",
+            ),
+        ] {
+            assert_eq!(finding.path, path);
+            assert_eq!(finding.fixes[0].revisions[0].path, path);
+            assert_eq!(finding.fixes[0].revisions[0].digest, revision);
+            assert!(finding.fixes[0].edits.iter().all(|edit| edit.path == path));
+        }
+    }
+
+    #[test]
+    fn partial_engine_and_startup_failures_keep_findings_and_later_scripts() {
+        let source = script("echo $x", 7, 14, Some("bash"));
+        let prepared = super::script::prepare(&source.text, "set -e");
+        let mut result = shellcheck_rs::checker::check_script(&super::CheckSpec {
+            filename: super::FILENAME.to_string(),
+            script: prepared.text.clone(),
+            shell_type_override: Some(shellcheck_rs::Shell::Bash),
+            ..super::CheckSpec::default()
+        });
+        result.dataflow_error = Some(shellcheck_rs::cfg::InternalError("Missing root"));
+        let mut startup = result
+            .comments
+            .iter()
+            .find(|comment| comment.comment.code == 2086)
+            .expect("native quote finding")
+            .clone();
+        startup.start.line = i64::try_from(prepared.startup_line).expect("startup line");
+        startup.end.line = startup.start.line;
+        startup.comment.severity = shellcheck_rs::Severity::ErrorC;
+        result.comments.insert(0, startup);
+        let partial = super::map_result(&source, &prepared, &source.text, "set -e", "bash", result);
+        assert!(
+            partial
+                .diagnostics
+                .iter()
+                .any(|finding| finding.code == "SC2086")
+        );
+        let error = partial.error.as_deref().expect("partial analysis failure");
+        assert!(error.contains("dataflow analysis stopped"), "{error}");
+        assert!(error.contains("startup options"), "{error}");
+        let outcome = super::combine([
+            super::analyze_script(&script("echo $before", 2, 14, Some("bash")), &defaults()),
+            partial,
+            super::analyze_script(&script("echo $after", 12, 14, Some("bash")), &defaults()),
+        ]);
+        let lines: Vec<_> = outcome
+            .diagnostics
+            .iter()
+            .filter(|finding| finding.code == "SC2086")
+            .map(|finding| finding.start.line)
+            .collect();
+        assert_eq!(lines, [2, 7, 12]);
+        assert!(outcome.error.is_some());
+    }
+
+    #[test]
+    fn invalid_options_return_an_outcome_error() {
+        use super::Guest;
+        let mut input = input(Vec::new(), Vec::new());
+        input.options = r#"{"shel":"bash"}"#.to_string();
+        let outcome = super::Plugin::analyze(input);
+        assert!(outcome.diagnostics.is_empty());
+        assert!(
+            outcome
+                .error
+                .expect("options error")
+                .contains("unknown field")
+        );
     }
 
     #[test]
@@ -482,6 +663,46 @@ mod tests {
         let findings = analyze_script(&script("echo $x", 3, 14, Some("bash")), &quiet)
             .unwrap_or_else(|error| panic!("{error}"));
         assert!(findings.is_empty(), "{findings:?}");
+    }
+
+    #[test]
+    fn named_and_all_optional_selectors_activate_the_engine_check() {
+        let source = script("var=hello; echo $var", 3, 14, Some("bash"));
+        let baseline = super::analyze_script(&source, &defaults());
+        assert!(
+            baseline
+                .diagnostics
+                .iter()
+                .all(|finding| finding.code != "SC2250")
+        );
+        for name in ["require-variable-braces", "all"] {
+            let options = Options::parse(&serde_json::json!({"enable": [name]}).to_string())
+                .expect("valid optional check");
+            let outcome = super::analyze_script(&source, &options);
+            assert!(outcome.error.is_none(), "{:?}", outcome.error);
+            assert!(
+                outcome
+                    .diagnostics
+                    .iter()
+                    .any(|finding| finding.code == "SC2250"),
+                "{name}: {:?}",
+                outcome.diagnostics
+            );
+        }
+    }
+
+    #[test]
+    fn dialect_option_does_not_reclassify_unknown_or_unsupported_shells() {
+        let options = Options::parse(r#"{"shell":"bash"}"#).expect("valid dialect");
+        for shell in ["", "pwsh", "python", "bash -c '{0}'"] {
+            let outcome = super::analyze_script(&script("echo $x", 3, 14, Some(shell)), &options);
+            assert!(
+                outcome.diagnostics.is_empty(),
+                "shell {shell:?}: {:?}",
+                outcome.diagnostics
+            );
+            assert!(outcome.error.is_none());
+        }
     }
 
     #[test]

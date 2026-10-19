@@ -1,3 +1,4 @@
 /target
+/artifacts
 /*.wasm
 /tests/host/testdata/*.wasm
