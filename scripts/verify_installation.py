@@ -19,6 +19,11 @@ jobs:
 """
 
 
+def contract_identity(wit):
+    checksum = hashlib.sha256(wit.replace(b"\r\n", b"\n")).hexdigest()
+    return "kjanat:actionlint/analyzer@0.1.0#sha256=" + checksum
+
+
 def run(binary, arguments, root, environment, expected=0):
     result = subprocess.run(
         [str(binary), *arguments],
@@ -96,7 +101,11 @@ def verify(binary, version, checksum):
             "version": version,
             "sha256": checksum,
             "kind": "component",
-            "contract": "kjanat:actionlint/analyzer@0.1.0",
+            "contract": contract_identity(
+                (
+                    Path(__file__).resolve().parents[1] / "wit" / "analyzer.wit"
+                ).read_bytes()
+            ),
         }
         if any(pin.get(key) != value for key, value in expected.items()):
             raise ValueError(f"Unexpected installed pin: {pin}")

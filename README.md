@@ -70,7 +70,7 @@ Packaging and local validation do not publish a GitHub release or registry entry
 ## Release
 
 Enable **immutable releases** in the repository settings before the first release. Push a signed `v` tag matching
-`Cargo.toml` (initially `v0.1.0`). The Release workflow reuses CI to build with locked dependencies, package once,
+`Cargo.toml`. The Release workflow reuses CI to build with locked dependencies, package once,
 and test that package through actionlint's public loader. A separate publication job downloads those tested bytes;
 it does not rebuild. Its `contents: write` permission publishes the five package files, and `id-token: write`
 authenticates the tag and repository to the pinned registry submission action. No publisher secret is needed.
