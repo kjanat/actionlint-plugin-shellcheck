@@ -15,7 +15,7 @@ concurrency:
 jobs:
   build:
     if: github.ref_type == 'tag'
-    uses: ./.github/workflows/ci.yml
+    uses: $/.github/workflows/ci.yml
 
   publish:
     needs: build
@@ -35,8 +35,7 @@ jobs:
           name: actionlint-plugin-shellcheck
           path: artifacts
       - name: Publish the exact tested package
-        env:
-          GH_TOKEN: ${{ github.token }}
+        env: { GH_TOKEN: "${{ github.token }}" }
         run: python3 -B scripts/release.py publish
       - name: Submit immutable release to the registry
         id: submit
@@ -46,8 +45,7 @@ jobs:
           sha256: ${{ needs.build.outputs.sha256 }}
           kind: component
       - name: Require registry publication
-        env:
-          SUBMISSION_ID: ${{ steps.submit.outputs.submission-id }}
+        env: { SUBMISSION_ID: "${{ steps.submit.outputs.submission-id }}" }
         run: python3 -B scripts/release.py wait
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
@@ -55,15 +53,14 @@ jobs:
           cache-dependency-path: tests/host/go.sum
       - name: Install the tested actionlint host revision
         shell: bash
-        run: |
-          version=$(go -C tests/host list -m -f '{{.Version}}' actionlint.kjanat.dev)
-          go install "actionlint.kjanat.dev/cmd/actionlint@$version"
+        run: version=$(go -C tests/host list -m -f '{{.Version}}' actionlint.kjanat.dev);
+          go install "actionlint.kjanat.dev/cmd/actionlint@${version}"
       - name: Verify fresh installation and locked offline checking
         shell: bash
-        run: |
-          python3 -B scripts/verify_installation.py \
-            --actionlint "$(go env GOPATH)/bin/actionlint" \
-            --version "$RELEASE_TAG" --sha256 "$EXPECTED_SHA256" > installation.json
+        run: python3 -B scripts/verify_installation.py
+          --actionlint "$(go env GOPATH)/bin/actionlint"
+          --version "${RELEASE_TAG}" --sha256 "${EXPECTED_SHA256}"
+          >installation.json
           cat installation.json
       - name: Preserve publication receipt
         if: always() && steps.submit.outputs.submission-id != ''

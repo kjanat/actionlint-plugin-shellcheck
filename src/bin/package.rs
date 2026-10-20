@@ -5,9 +5,15 @@ use std::path::Path;
 
 use actionlint_plugin_shellcheck::exports::kjanat::actionlint::analyzer::Fact;
 use serde_json::json;
-use sha2::{Digest, Sha256};
-use wasm_encoder::{Component, CustomSection, RawSection};
-use wasmparser::{Encoding, Parser, Payload, Validator};
+use sha2::Digest;
+use sha2::Sha256;
+use wasm_encoder::Component;
+use wasm_encoder::CustomSection;
+use wasm_encoder::RawSection;
+use wasmparser::Encoding;
+use wasmparser::Parser;
+use wasmparser::Payload;
+use wasmparser::Validator;
 
 const SECTION: &str = "actionlint.plugin";
 const WIT: &str = include_str!("../../wit/analyzer.wit");
@@ -144,7 +150,8 @@ fn main() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wasm_encoder::{Module, ModuleSection};
+    use wasm_encoder::Module;
+    use wasm_encoder::ModuleSection;
 
     #[test]
     fn packaging_is_idempotent_and_keeps_nested_custom_sections() -> Result<()> {

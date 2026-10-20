@@ -17,8 +17,7 @@ jobs:
   build:
     runs-on: ubuntu-26.04
     timeout-minutes: 30
-    outputs:
-      sha256: ${{ steps.package.outputs.sha256 }}
+    outputs: { sha256: "${{ steps.package.outputs.sha256 }}" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: { persist-credentials: false }
@@ -30,8 +29,7 @@ jobs:
         run: rustup toolchain install
       - name: Check release version
         if: github.ref_type == 'tag'
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
+        env: { RELEASE_TAG: "${{ github.ref_name }}" }
         run: python3 -B scripts/release.py check-tag
       - name: Release automation tests
         run: python3 -B -m unittest discover -s scripts -p 'test_*.py'
