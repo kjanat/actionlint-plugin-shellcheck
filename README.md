@@ -2,18 +2,18 @@
 
 ShellCheck for the `run:` steps actionlint analyzes, as a WebAssembly component built on
 [shellcheck-rs](https://github.com/kjanat/shellcheck-rs). The component implements
-`kjanat:actionlint/analyzer@0.1.0` from [`wit/analyzer.wit`](wit/analyzer.wit) and reports under the rule name
-`shellcheck-rs`. actionlint runs it in a fresh instance per document; no ShellCheck executable, filesystem,
-network or environment is involved.
+`kjanat:actionlint/analyzer@0.1.0` from [`wit/analyzer.wit`](wit/analyzer.wit). Its component identity is
+`shellcheck-rs`; actionlint exposes its findings under the standard `shellcheck` rule. actionlint runs it in a fresh
+instance per document; no ShellCheck executable, filesystem, network or environment is involved.
 
 ## Use
 
 ```sh
-actionlint check --shellcheck= --plugin artifacts/plugin.wasm
+actionlint check --plugin artifacts/plugin.wasm
 ```
 
-`--shellcheck=` or `tools.shellcheck.enabled: false` in the actionlint configuration turns off the built-in rule,
-which would otherwise check the same scripts with a ShellCheck executable.
+The host selects this plugin as the ShellCheck backend. No native ShellCheck installation is needed.
+`--no-shellcheck` or `tools.shellcheck.enabled: false` disables ShellCheck analysis, including this plugin.
 
 Each finding carries the ShellCheck code as `code`, the ShellCheck level as `severity`, the message in the form
 `shellcheck reported issue in this script: SC2086:info:1:6: ...` and, when ShellCheck offers one, a fix with edits
@@ -63,7 +63,7 @@ repackaging the same input produces identical bytes. The declaration's contract 
 vendored WIT with LF line endings, matching actionlint's contract identity. The runtime descriptor and static
 declaration share rule metadata. This is a component, not the core-Wasm script-engine ABI.
 
-The vendored contract and host tests target actionlint revision `1934c2afefdce90fec149fb089e57d0b129f1643`.
+The vendored contract and host tests target actionlint revision `b2937bfc8f7caddd6f051c076d7bf45c059a5cdc`.
 Update them together when the contract changes; the full structural interface is checked when loading.
 Packaging and local validation do not publish a GitHub release or registry entry.
 

@@ -28,7 +28,7 @@ class InstallationProofTests(unittest.TestCase):
             "exit_code": 1,
             "diagnostics": [
                 {
-                    "rule": "shellcheck-rs",
+                    "rule": "shellcheck",
                     "code": "SC2086",
                     "start": {"line": 6, "column": 19},
                     "end": {"line": 6, "column": 24},
@@ -44,7 +44,7 @@ class InstallationProofTests(unittest.TestCase):
             with self.subTest(field=field), self.assertRaises(ValueError):
                 verify_installation.check_result(invalid)
         for field, value in (
-            ("rule", "shellcheck"),
+            ("rule", "shellcheck-rs"),
             ("code", "SC9999"),
             ("start", {"line": 1, "column": 6}),
         ):

@@ -50,7 +50,7 @@ def check_result(result):
         raise ValueError(f"Expected only SC2086: {diagnostics}")
     finding = diagnostics[0]
     if (
-        finding.get("rule") != "shellcheck-rs"
+        finding.get("rule") != "shellcheck"
         or finding.get("code") != "SC2086"
         or finding.get("start") != {"line": 6, "column": 19}
         or finding.get("end") != {"line": 6, "column": 24}
@@ -109,7 +109,7 @@ def verify(binary, version, checksum):
         }
         if any(pin.get(key) != value for key, value in expected.items()):
             raise ValueError(f"Unexpected installed pin: {pin}")
-        arguments = ["check", "--json", "--no-shellcheck", "--no-ruff", "workflow.yml"]
+        arguments = ["check", "--json", "--no-ruff", "workflow.yml"]
         diagnostics = check_result(run(binary, arguments, root, environment, 1))
         # Go's HTTP transport honors these variables. No remote artifact or
         # catalogue is available on the second check; verified cache bytes suffice.
