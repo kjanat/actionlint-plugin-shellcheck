@@ -63,7 +63,7 @@ repackaging the same input produces identical bytes. The declaration's contract 
 vendored WIT with LF line endings, matching actionlint's contract identity. The runtime descriptor and static
 declaration share rule metadata. This is a component, not the core-Wasm script-engine ABI.
 
-The vendored contract and host tests target actionlint revision `b2937bfc8f7caddd6f051c076d7bf45c059a5cdc`.
+The vendored contract and host tests target actionlint revision `73105c6dc5ce63e87584a11cf5f60a524695e108`.
 Update them together when the contract changes; the full structural interface is checked when loading.
 Packaging and local validation do not publish a GitHub release or registry entry.
 

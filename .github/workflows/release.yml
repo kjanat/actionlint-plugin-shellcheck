@@ -53,8 +53,9 @@ jobs:
           cache-dependency-path: tests/host/go.sum
       - name: Install the tested actionlint host revision
         shell: bash
-        run: version=$(go -C tests/host list -m -f '{{.Version}}' actionlint.kjanat.dev);
-          go install "actionlint.kjanat.dev/cmd/actionlint@${version}"
+        run: |
+          go -C tests/host build -mod=readonly \
+            -o "$(go env GOPATH)/bin/actionlint" actionlint.kjanat.dev/v2/cmd/actionlint
       - name: Verify fresh installation and locked offline checking
         shell: bash
         run: |
