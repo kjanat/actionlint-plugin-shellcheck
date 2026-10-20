@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.ref_type == 'tag'
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: build
+    runs-on: ubuntu-26.04
+    timeout-minutes: 40
+    permissions:
+      contents: write
+      id-token: write
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+      EXPECTED_SHA256: ${{ needs.build.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: { persist-credentials: false }
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: actionlint-plugin-shellcheck
+          path: artifacts
+      - name: Publish the exact tested package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B scripts/release.py publish
+      - name: Submit immutable release to the registry
+        id: submit
+        uses: kjanat/actionlint-plugin-registry@1fb02b880a8e88436cefbddc667ee39998a00233
+        with:
+          asset: plugin.wasm
+          sha256: ${{ needs.build.outputs.sha256 }}
+          kind: component
+      - name: Require registry publication
+        env:
+          SUBMISSION_ID: ${{ steps.submit.outputs.submission-id }}
+        run: python3 -B scripts/release.py wait
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: tests/host/go.mod
+          cache-dependency-path: tests/host/go.sum
+      - name: Install the tested actionlint host revision
+        shell: bash
+        run: |
+          version=$(go -C tests/host list -m -f '{{.Version}}' actionlint.kjanat.dev)
+          go install "actionlint.kjanat.dev/cmd/actionlint@$version"
+      - name: Verify fresh installation and locked offline checking
+        shell: bash
+        run: |
+          python3 -B scripts/verify_installation.py \
+            --actionlint "$(go env GOPATH)/bin/actionlint" \
+            --version "$RELEASE_TAG" --sha256 "$EXPECTED_SHA256" > installation.json
+          cat installation.json
+      - name: Preserve publication receipt
+        if: always() && steps.submit.outputs.submission-id != ''
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: registry-publication-receipt
+          path: |
+            publication.json
+            installation.json
+          if-no-files-found: error
