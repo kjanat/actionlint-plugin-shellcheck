@@ -57,10 +57,11 @@ jobs:
           go install "actionlint.kjanat.dev/cmd/actionlint@${version}"
       - name: Verify fresh installation and locked offline checking
         shell: bash
-        run: python3 -B scripts/verify_installation.py
-          --actionlint "$(go env GOPATH)/bin/actionlint"
-          --version "${RELEASE_TAG}" --sha256 "${EXPECTED_SHA256}"
-          >installation.json
+        run: |
+          python3 -B scripts/verify_installation.py \
+            --actionlint "$(go env GOPATH)/bin/actionlint" \
+            --version "${RELEASE_TAG}" --sha256 "${EXPECTED_SHA256}" \
+            >installation.json
           cat installation.json
       - name: Preserve publication receipt
         if: always() && steps.submit.outputs.submission-id != ''
