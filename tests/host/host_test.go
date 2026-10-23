@@ -69,6 +69,10 @@ func analyze(t *testing.T, options string) []diagnostic.Diagnostic {
 	return findings
 }
 
+// A component can compile successfully while its host adapter drops findings or
+// shifts their locations. This loads the packaged Wasm through the public host,
+// analyzes Bash and sh steps, and checks their diagnostics and quote edits. The
+// PowerShell step also catches accidental shell analysis of another language.
 func TestPluginReportsShellCheckFindings(t *testing.T) {
 	findings := analyze(t, "")
 	if len(findings) != 2 {
@@ -81,11 +85,22 @@ func TestPluginReportsShellCheckFindings(t *testing.T) {
 	if len(quote.Fixes) != 1 || len(quote.Fixes[0].Edits) != 2 {
 		t.Fatalf("quote fixes: %+v", quote.Fixes)
 	}
+	for i, column := range []int{19, 24} {
+		edit := quote.Fixes[0].Edits[i]
+		position := diagnostic.Position{Line: 6, Column: column}
+		if edit.Path != "workflow.yml" || edit.Start != position || edit.End != position || edit.Replacement != `"` {
+			t.Fatalf("quote edit: %+v", edit)
+		}
+	}
 	if bashism.Code != "SC3010" || bashism.Start.Line != 8 || bashism.Start.Column != 11 || bashism.Severity != "warning" {
 		t.Fatalf("bashism: %+v", bashism)
 	}
 }
 
+// Users expect a disabled ShellCheck code to disappear without losing unrelated
+// findings. This passes the option through the host and component boundary and
+// checks the remaining bashism diagnostic. It catches configuration that parses
+// correctly in Rust but gets lost while the host invokes the Wasm plugin.
 func TestPluginOptionsDisableCodes(t *testing.T) {
 	findings := analyze(t, `{"disable": ["SC2086"]}`)
 	if len(findings) != 1 || findings[0].Code != "SC3010" {
@@ -93,6 +108,10 @@ func TestPluginOptionsDisableCodes(t *testing.T) {
 	}
 }
 
+// Misspelled settings must produce a useful error for both supported call paths.
+// This submits an unknown key through the host's schema validation and directly
+// to the component, checking that each names the bad key. Otherwise one caller
+// could silently ignore a setting that another caller correctly rejects.
 func TestPluginRejectsUnknownOptions(t *testing.T) {
 	ctx := context.Background()
 	component := load(t)
@@ -109,6 +128,11 @@ func TestPluginRejectsUnknownOptions(t *testing.T) {
 	}
 }
 
+// Optional-check names and diagnostic numbers select different ShellCheck
+// features, and confusing them previously accepted ineffective configuration.
+// This sends misspellings and numeric selectors through the host and guest, then
+// checks that all remains accepted. Both the packaged schema and the runtime
+// parser must reject the bad selectors and accept the supported one.
 func TestPluginValidatesOptionalCheckNames(t *testing.T) {
 	component := load(t)
 	for _, name := range []string{"require-variable-brace", "SC2086", "2086"} {
@@ -163,6 +187,10 @@ func (a *rawFixAnalyzer) Analyze(ctx context.Context, input analyzer.Input) ([]d
 	return findings, nil
 }
 
+// The host can normalize diagnostic paths after an analyzer returns, hiding a
+// plugin that created edits against the wrong path or revision. This intercepts
+// actual component findings before that policy runs and checks every raw fix.
+// Editors need those original revision keys to reject edits against changed files.
 func TestFixRevisionsUseDeclaringPathBeforePolicy(t *testing.T) {
 	checked := &rawFixAnalyzer{Analyzer: load(t)}
 	_, err := analysis.Analyze(t.Context(), analysis.Request{
@@ -177,6 +205,10 @@ func TestFixRevisionsUseDeclaringPathBeforePolicy(t *testing.T) {
 	}
 }
 
+// The registry reads static metadata, while execution gets a descriptor from
+// the guest. Disagreement can make a discoverable plugin fail at load time or
+// advertise different rules. This inspects and loads the same packaged component,
+// compares both descriptors, and checks its roles and vendored WIT digest.
 func TestPackagedDeclarationMatchesRuntimeAndContract(t *testing.T) {
 	info, err := plugin.Inspect(t.Context(), pluginPath(), plugin.ArtifactOptions{})
 	if err != nil {
@@ -238,6 +270,10 @@ func TestPackagedDeclarationMatchesRuntimeAndContract(t *testing.T) {
 	}
 }
 
+// Release files can become stale even when the component itself still loads.
+// This opens the produced package, compares its metadata sidecar with the Wasm
+// section, and hashes every file listed in SHA256SUMS. It catches packaging that
+// ships files from different builds or checksum entries pointing outside the package.
 func TestPackageSidecarsAndChecksums(t *testing.T) {
 	info, err := plugin.Inspect(t.Context(), pluginPath(), plugin.ArtifactOptions{})
 	if err != nil {
@@ -256,7 +292,8 @@ func TestPackageSidecarsAndChecksums(t *testing.T) {
 		t.Fatal(err)
 	}
 	lines := strings.Split(strings.TrimSpace(string(manifest)), "\n")
-	if len(lines) != 4 {
+	expected := map[string]bool{"LICENSE": false, "metadata.json": false, "plugin.wasm": false, "schema.json": false}
+	if len(lines) != len(expected) {
 		t.Fatalf("checksum entries: %v", lines)
 	}
 	for _, line := range lines {
@@ -264,6 +301,10 @@ func TestPackageSidecarsAndChecksums(t *testing.T) {
 		if len(fields) != 2 || filepath.Base(fields[1]) != fields[1] {
 			t.Fatalf("invalid checksum entry %q", line)
 		}
+		if seen, known := expected[fields[1]]; !known || seen {
+			t.Fatalf("unexpected or repeated checksum entry %q", line)
+		}
+		expected[fields[1]] = true
 		data, err := os.ReadFile(filepath.Join(dir, fields[1]))
 		if err != nil {
 			t.Fatal(err)

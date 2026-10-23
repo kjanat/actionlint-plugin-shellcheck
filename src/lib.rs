@@ -464,6 +464,10 @@ mod tests {
         }
     }
 
+    // Workflow steps and invoked composite actions can produce identical findings
+    // while belonging to different files and revisions. Calling the guest entry
+    // point checks its document-path fallback and explicit action paths together,
+    // so a fix cannot accidentally target the caller instead of the action.
     #[test]
     fn document_paths_bind_fixes_without_rewriting_invoked_sources() {
         use super::Guest;
@@ -486,10 +490,15 @@ mod tests {
             assert_eq!(finding.path, path);
             assert_eq!(finding.fixes[0].revisions[0].path, path);
             assert_eq!(finding.fixes[0].revisions[0].digest, revision);
+            assert!(!finding.fixes[0].edits.is_empty());
             assert!(finding.fixes[0].edits.iter().all(|edit| edit.path == path));
         }
     }
 
+    // An engine failure must not discard findings from that script or prevent
+    // later scripts from being analyzed. Injecting failures into an actual engine
+    // result exercises the adapter's partial-result handling without depending on
+    // a particular engine crash, and checks findings on both sides of the failure.
     #[test]
     fn partial_engine_and_startup_failures_keep_findings_and_later_scripts() {
         let source = script("echo $x", 7, 14, Some("bash"));
@@ -536,6 +545,10 @@ mod tests {
         assert!(outcome.error.is_some());
     }
 
+    // The guest entry point converts option-parser errors into an explicit
+    // incomplete-analysis outcome. Parser tests alone cannot catch an entry point
+    // that panics, ignores the error or returns apparent success. This exercises
+    // that conversion directly with an unknown option and no unrelated scripts.
     #[test]
     fn invalid_options_return_an_outcome_error() {
         use super::Guest;
@@ -551,6 +564,10 @@ mod tests {
         );
     }
 
+    // Editors and fix application identify a source by its document, revision,
+    // node and address, rather than its displayed coordinates alone. An actual
+    // ShellCheck finding must carry those host values through diagnostic mapping,
+    // and its fix must name the same revision with the documented applicability.
     #[test]
     fn findings_and_fixes_preserve_source_identity() {
         let mut source = script("echo $x", 7, 14, Some("bash"));
@@ -573,6 +590,10 @@ mod tests {
         assert_eq!(fix.revisions[0].digest, source.reference.revision);
     }
 
+    // ShellCheck reports positions within a standalone snippet, while users edit
+    // an indented workflow document. This runs the engine and checks the resulting
+    // diagnostic and both quote insertions against document coordinates. Correct
+    // messages alone would not detect edits that corrupt the surrounding YAML.
     #[test]
     fn unquoted_variable_maps_to_the_document() {
         let findings = analyze_script(&script("echo $x", 7, 14, Some("bash")), &defaults())
@@ -590,6 +611,11 @@ mod tests {
         assert_eq!(finding.fixes.len(), 1);
         let edits = &finding.fixes[0].edits;
         assert_eq!(edits.len(), 2);
+        assert!(
+            edits
+                .iter()
+                .all(|edit| edit.start.line == 7 && edit.end.line == 7)
+        );
         assert_eq!(
             (
                 edits[0].start.column,
@@ -608,22 +634,37 @@ mod tests {
         );
     }
 
+    // A block script's later lines cannot use the first line's offset, and tabs
+    // further change the engine's column numbering. This obtains an actual
+    // second-line finding and checks its document position. It protects the
+    // multiline mapping path that the single-line diagnostic test does not cover.
     #[test]
     fn multiline_scripts_use_each_line_span() {
-        let findings = analyze_script(
-            &script("set -x\n\techo $x\n", 8, 11, Some("bash")),
-            &defaults(),
-        )
-        .unwrap_or_else(|error| panic!("{error}"));
+        let mut source = script("set -x\n\techo $x\n", 8, 11, Some("bash"));
+        source.spans[1].document.column = 13;
+        let findings =
+            analyze_script(&source, &defaults()).unwrap_or_else(|error| panic!("{error}"));
         assert_eq!(findings.len(), 1, "{findings:?}");
-        assert_eq!((findings[0].start.line, findings[0].start.column), (9, 17));
+        assert_eq!((findings[0].start.line, findings[0].start.column), (9, 19));
+        assert_eq!((findings[0].end.line, findings[0].end.column), (9, 21));
+        let edits = &findings[0].fixes[0].edits;
+        assert_eq!(edits.len(), 2);
+        for (edit, column) in edits.iter().zip([19, 21]) {
+            assert_eq!((edit.start.line, edit.start.column), (9, column));
+            assert_eq!((edit.end.line, edit.end.column), (9, column));
+            assert_eq!(edit.replacement, "\"");
+        }
     }
 
+    // GitHub expressions are evaluated before the shell sees a script. Passing
+    // their YAML spelling directly to ShellCheck can invent constant-condition
+    // warnings. This analyzes a real conditional through the adapter and checks
+    // the engine result after expression masking, beyond checking mask text alone.
     #[test]
     fn expressions_do_not_trigger_constant_warnings() {
         let findings = analyze_script(
             &script(
-                "if ${{ matrix.flag }}; then echo on; fi",
+                "if ${{ matrix.flag }}; then echo on; fi\necho $x",
                 3,
                 14,
                 Some("bash"),
@@ -631,20 +672,15 @@ mod tests {
             &defaults(),
         )
         .unwrap_or_else(|error| panic!("{error}"));
-        assert!(findings.is_empty(), "{findings:?}");
+        assert_eq!(findings.len(), 1, "{findings:?}");
+        assert_eq!(findings[0].code, "SC2086");
+        assert_eq!((findings[0].start.line, findings[0].start.column), (4, 19));
     }
 
-    #[test]
-    fn startup_options_apply_without_findings() {
-        let script = script("cat missing | grep x", 3, 14, Some("bash"));
-        let findings =
-            analyze_script(&script, &defaults()).unwrap_or_else(|error| panic!("{error}"));
-        assert!(
-            findings.iter().all(|finding| finding.start.line == 3),
-            "{findings:?}"
-        );
-    }
-
+    // Shell inference must skip unsupported languages, but a leading ShellCheck
+    // directive can explicitly select a supported dialect. These cases exercise
+    // the real analyzer on both paths and require a shell-specific warning for
+    // the directive, catching both accidental analysis and accidental skipping.
     #[test]
     fn unsupported_shells_and_directives() {
         assert!(
@@ -668,6 +704,10 @@ mod tests {
         );
     }
 
+    // Accepted configuration is useful only if it changes engine behavior. These
+    // two analyses require a POSIX-shell warning after a dialect override and
+    // remove an otherwise emitted quoting warning through disable. They check
+    // option forwarding beyond the parser and schema validation tests.
     #[test]
     fn options_select_dialect_and_exclusions() {
         let dash = Options::parse(r#"{"shell": "sh"}"#).unwrap_or_else(|error| panic!("{error}"));
@@ -684,10 +724,15 @@ mod tests {
         assert!(findings.is_empty(), "{findings:?}");
     }
 
+    // Optional checks must be inactive by default and become active through
+    // either their exact name or all. Comparing actual engine findings across
+    // those configurations catches a selector that validates successfully but
+    // never reaches ShellCheck, which catalogue-enumeration tests cannot detect.
     #[test]
     fn named_and_all_optional_selectors_activate_the_engine_check() {
         let source = script("var=hello; echo $var", 3, 14, Some("bash"));
         let baseline = super::analyze_script(&source, &defaults());
+        assert!(baseline.error.is_none(), "{:?}", baseline.error);
         assert!(
             baseline
                 .diagnostics
@@ -710,6 +755,10 @@ mod tests {
         }
     }
 
+    // A configured dialect refines a shell script; it must not turn Python,
+    // PowerShell or an opaque shell template into one. Running the analyzer for
+    // each unsupported execution context checks that the eligibility guard runs
+    // before the override, avoiding misleading ShellCheck findings on other code.
     #[test]
     fn dialect_option_does_not_reclassify_unknown_or_unsupported_shells() {
         let options = Options::parse(r#"{"shell":"bash"}"#).expect("valid dialect");
@@ -724,15 +773,24 @@ mod tests {
         }
     }
 
+    // Hosts can provide script declarations before effective execution facts are
+    // available. The analyzer must still distinguish its Bash default from an
+    // explicit sh declaration in that state. Actual bashism diagnostics check
+    // that fallback behavior independently of the normal runtime-shell path.
     #[test]
     fn declared_shell_is_used_without_runtime_facts() {
-        let findings = analyze_script(&script("[[ -n $x ]]", 3, 14, None), &defaults())
+        let source = "[[ -n $x ]]\necho $x";
+        let findings = analyze_script(&script(source, 3, 14, None), &defaults())
             .unwrap_or_else(|error| panic!("{error}"));
+        assert!(
+            findings.iter().any(|finding| finding.code == "SC2086"),
+            "{findings:?}"
+        );
         assert!(
             findings.iter().all(|finding| finding.code != "SC3010"),
             "{findings:?}"
         );
-        let mut sh = script("[[ -n $x ]]", 3, 14, None);
+        let mut sh = script(source, 3, 14, None);
         sh.shell = "sh".to_string();
         let findings = analyze_script(&sh, &defaults()).unwrap_or_else(|error| panic!("{error}"));
         assert!(

@@ -153,6 +153,10 @@ mod tests {
     use wasm_encoder::Module;
     use wasm_encoder::ModuleSection;
 
+    // Repackaging must replace only this component's discovery metadata, without
+    // damaging embedded modules or their identically named sections. This builds
+    // a nested component, packages it twice and validates the result, checking both
+    // deterministic bytes and the survival of unrelated and nested section contents.
     #[test]
     fn packaging_is_idempotent_and_keeps_nested_custom_sections() -> Result<()> {
         let mut module = Module::new();
@@ -187,12 +191,20 @@ mod tests {
         Ok(())
     }
 
+    // The publication path promises a component, so wrapping a core module or
+    // malformed component with plausible metadata would create an unusable release.
+    // These binary inputs exercise the packager's format validation before it
+    // produces output, independently of the happy-path nested-component test.
     #[test]
     fn packaging_rejects_core_modules_and_truncated_components() {
         assert!(with_metadata(&Module::new().finish(), b"{}").is_err());
         assert!(with_metadata(&[0, 97, 115, 109, 13, 0, 1, 0, 1, 127], b"{}").is_err());
     }
 
+    // Registry admission reads static metadata before a host invokes the guest.
+    // This checks the shipped WIT digest, strict option schema, rule identity and
+    // filesystem requirement in the generated declaration. Drift in those fields
+    // can reject a working component or hide the access its source analysis needs.
     #[test]
     fn declaration_uses_the_current_vendored_contract_and_rule_schema() -> Result<()> {
         let value: serde_json::Value = serde_json::from_slice(&metadata()?)?;

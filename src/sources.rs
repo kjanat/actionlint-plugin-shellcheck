@@ -177,8 +177,12 @@ mod tests {
     use super::Files;
     use super::SourceRoot;
 
+    // Source directives can name host paths while the guest sees mounted paths.
+    // This checks Unix and Windows prefix translation, component boundaries and
+    // preservation of parent components for filesystem resolution. A similarly
+    // named directory must not be rewritten into an unrelated configured mount.
     #[test]
-    fn host_paths_map_only_to_declared_roots() {
+    fn host_paths_translate_mount_prefixes_without_cleaning_parents() {
         let files = Files::new(
             Some("/workspace/sub"),
             &[],

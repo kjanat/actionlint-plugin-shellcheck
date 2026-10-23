@@ -174,6 +174,10 @@ mod tests {
     use super::real_column;
     use super::sanitize_expressions;
 
+    // ShellCheck directives are meaningful in the initial comment header, where
+    // setup commands must not displace them. This checks header splitting, quoted
+    // dialects and malformed directives, and verifies that a later comment cannot
+    // retroactively select the script's dialect.
     #[test]
     fn header_detects_shell_directives() {
         let (head, body, selects) =
@@ -198,6 +202,10 @@ mod tests {
         );
     }
 
+    // Expression masking must remove GitHub syntax without moving subsequent
+    // shell tokens or changing line counts. These exact string cases check those
+    // positional properties, including a multiline expression and unfinished input,
+    // before engine findings depend on the resulting source map.
     #[test]
     fn expressions_become_underscores() {
         assert_eq!(
@@ -211,6 +219,10 @@ mod tests {
         assert_eq!(sanitize_expressions("plain ${{ open"), "plain ${{ open");
     }
 
+    // The adapter inserts shell startup commands after the source header. That
+    // synthetic line needs no source location, while every original line must map
+    // back correctly. This checks the prepared text and mapping together, including
+    // empty and out-of-range inputs that could otherwise create bogus positions.
     #[test]
     fn prepared_scripts_map_back_to_source_lines() {
         let prepared = prepare("#!/bin/bash\n# comment\necho one\necho two", "set -e");
@@ -231,6 +243,10 @@ mod tests {
         assert_eq!(empty.original_line(1), 0);
     }
 
+    // ShellCheck measures columns using tab stops, but workflow positions count
+    // characters. These boundary cases check positions inside and after a tab,
+    // alongside ordinary and beyond-line columns. A wrong conversion would place
+    // diagnostics and quote edits on the wrong character even with correct line maps.
     #[test]
     fn tab_columns_realign() {
         assert_eq!(real_column("\techo $x", 9), 2);
