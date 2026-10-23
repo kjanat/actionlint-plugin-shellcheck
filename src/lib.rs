@@ -177,15 +177,18 @@ pub fn analyze_script(script: &Script, options: &Options) -> Outcome {
         min_severity: options.severity,
         ..CheckSpec::default()
     };
-    let system: Rc<dyn System> = match &script.runtime {
-        Some(runtime) if options.external_sources && runtime.directory_known => {
-            Rc::new(sources::Files::new(
-                &runtime.directory,
-                &options.source_path,
-                &options.source_roots,
-            ))
-        }
-        _ => Rc::new(NoExternalSources),
+    let system: Rc<dyn System> = if options.external_sources {
+        Rc::new(sources::Files::new(
+            script
+                .runtime
+                .as_ref()
+                .filter(|runtime| runtime.directory_known)
+                .map(|runtime| runtime.directory.as_str()),
+            &options.source_path,
+            &options.source_roots,
+        ))
+    } else {
+        Rc::new(NoExternalSources)
     };
     let result = shellcheck_rs::checker::check_script_with(system, &spec);
     map_result(script, &prepared, &source, &setup, &name, result)

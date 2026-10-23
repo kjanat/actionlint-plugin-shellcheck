@@ -62,6 +62,11 @@ the duration of the call. Clean and transitively sourced files are dependencies
 even when they emit no findings. ShellCheck directives cannot expand the host's
 grants. Rc files still require the native adapter.
 
+With explicit filesystem grants, absolute source paths and absolute search
+directories work even without a known working directory. Relative paths still
+require a known base. Source lookup follows ShellCheck's search order, including
+its relative search candidates before falling back to an absolute source name.
+
 ## Build
 
 Requirements: the Rust toolchain in `rust-toolchain.toml` with the `wasm32-wasip2` target, which `rustup` installs

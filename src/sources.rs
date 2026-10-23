@@ -9,7 +9,7 @@ use crate::exports;
 
 /// Source access uses only the filesystem directories granted to this invocation.
 pub struct Files {
-    directory: PathBuf,
+    directory: Option<PathBuf>,
     paths: Vec<String>,
     roots: Vec<SourceRoot>,
 }
@@ -22,21 +22,21 @@ pub struct SourceRoot {
 }
 
 impl Files {
-    pub fn new(directory: &str, paths: &[String], roots: &[SourceRoot]) -> Self {
+    pub fn new(directory: Option<&str>, paths: &[String], roots: &[SourceRoot]) -> Self {
         Self {
-            directory: PathBuf::from(directory),
+            directory: directory.map(PathBuf::from),
             paths: paths.to_vec(),
             roots: roots.to_vec(),
         }
     }
 
-    fn path(&self, name: &str) -> PathBuf {
+    fn path(&self, name: &str) -> Option<PathBuf> {
         if self
             .roots
             .iter()
             .any(|root| within(name, &root.guest, false))
         {
-            return normalized(Path::new(name));
+            return Some(normalized(Path::new(name)));
         }
         for root in &self.roots {
             let windows = root.host.get(1..2) == Some(":");
@@ -47,12 +47,17 @@ impl Files {
             };
             let host = root.host.trim_end_matches('/');
             if within(&name, host, windows) {
-                return normalized(
+                return Some(normalized(
                     &Path::new(&root.guest).join(name[host.len()..].trim_start_matches('/')),
-                );
+                ));
             }
         }
-        normalized(&self.directory.join(name))
+        if Path::new(name).is_absolute() {
+            return Some(normalized(Path::new(name)));
+        }
+        self.directory
+            .as_ref()
+            .map(|directory| normalized(&directory.join(name)))
     }
 }
 
@@ -91,7 +96,10 @@ impl System for Files {
         if external == Some(false) {
             return Err(not_an_input(external, file));
         }
-        std::fs::read(self.path(file))
+        let path = self
+            .path(file)
+            .ok_or_else(|| format!("{file}: working directory is unknown for a relative source"))?;
+        std::fs::read(path)
             .map(|bytes| decode_bytes(&bytes))
             .map_err(|error| format!("{file}: {error}"))
     }
@@ -114,12 +122,16 @@ impl System for Files {
                 .map(|directory| adjusted(directory, script).join(filename)),
         );
         for candidate in candidates {
-            let candidate = self.path(&candidate.to_string_lossy());
-            if candidate.is_file() {
+            if let Some(candidate) = self.path(&candidate.to_string_lossy())
+                && candidate.is_file()
+            {
                 return candidate.to_string_lossy().into_owned();
             }
         }
-        self.path(name).to_string_lossy().into_owned()
+        self.path(name).map_or_else(
+            || name.to_string(),
+            |path| path.to_string_lossy().into_owned(),
+        )
     }
 }
 
@@ -161,7 +173,7 @@ mod tests {
     #[test]
     fn host_paths_map_only_to_declared_roots() {
         let files = Files::new(
-            "/workspace/sub",
+            Some("/workspace/sub"),
             &[],
             &[
                 SourceRoot {
@@ -180,11 +192,11 @@ mod tests {
             ("/workspace/./lib/../clean.sh", "/workspace/lib/../clean.sh"),
             ("../clean.sh", "/workspace/sub/../clean.sh"),
         ] {
-            assert_eq!(files.path(input), PathBuf::from(expected), "{input}");
+            assert_eq!(files.path(input), Some(PathBuf::from(expected)), "{input}");
         }
         assert_eq!(
             files.path("/repo-other/secret"),
-            PathBuf::from("/repo-other/secret")
+            Some(PathBuf::from("/repo-other/secret"))
         );
     }
 }

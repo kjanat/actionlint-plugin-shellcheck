@@ -113,3 +113,58 @@ func TestSourcedParseFailureIsReportedAtInvocation(t *testing.T) {
 	}
 	t.Fatalf("source parse failure lost: %+v", findings)
 }
+
+func TestUnknownDirectoryUsesOnlyIndependentSourcePaths(t *testing.T) {
+	component := load(t)
+	for _, tc := range []struct {
+		name, script, options string
+		noRuntime, read       bool
+	}{
+		{"absolute", ". /sources/0/values.sh\necho $FLAGS\n", `{"external-sources":true}`, false, true},
+		{"absolute search path", ". values.sh\necho $FLAGS\n", `{"external-sources":true,"source-path":["/sources/0"]}`, false, true},
+		{"mapped host path", ". /repo/values.sh\necho $FLAGS\n", `{"external-sources":true,"source-roots":[{"host":"/repo","guest":"/sources/0"}]}`, false, true},
+		{"no runtime", ". /sources/0/values.sh\necho $FLAGS\n", `{"external-sources":true}`, true, true},
+		{"relative without base", ". values.sh\necho $FLAGS\n", `{"external-sources":true}`, false, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			files := &sourceFiles{FS: fstest.MapFS{"values.sh": &fstest.MapFile{Data: []byte("FLAGS=one\n")}}}
+			script := sourceScript(tc.script)
+			if tc.noRuntime {
+				script.Runtime = nil
+			} else {
+				script.Runtime.DirectoryKnown = false
+			}
+			findings, err := component.Analyze(t.Context(), analyzer.Input{
+				Options: json.RawMessage(tc.options), Scripts: []analyzer.Script{script},
+				Files: []analyzer.FileSystem{{Path: "/sources/0", FS: preopens.ImmutableFS{FS: files}}},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if slices.Contains(files.opened, "values.sh") != tc.read || tc.read && len(findings) != 0 {
+				t.Fatalf("read=%v files=%v findings=%+v", tc.read, files.opened, findings)
+			}
+		})
+	}
+}
+
+func TestAbsoluteSourceSearchOrderMatchesShellCheck(t *testing.T) {
+	component := load(t)
+	for _, shadow := range []bool{true, false} {
+		workspace := fstest.MapFS{}
+		if shadow {
+			workspace["sources/0/values.sh"] = &fstest.MapFile{Data: []byte("FLAGS='one two'\n")}
+		}
+		findings, err := component.Analyze(t.Context(), analyzer.Input{
+			Options: json.RawMessage(`{"external-sources":true}`),
+			Scripts: []analyzer.Script{sourceScript(". /sources/0/values.sh\necho $FLAGS\n")},
+			Files: []analyzer.FileSystem{
+				{Path: "/workspace", FS: preopens.ImmutableFS{FS: workspace}},
+				{Path: "/sources/0", FS: preopens.ImmutableFS{FS: fstest.MapFS{"values.sh": &fstest.MapFile{Data: []byte("FLAGS=one\n")}}}},
+			},
+		})
+		if err != nil || (len(findings) == 1 && findings[0].Code == "SC2086") != shadow || !shadow && len(findings) != 0 {
+			t.Fatalf("relative candidate=%v findings=%+v error=%v", shadow, findings, err)
+		}
+	}
+}
