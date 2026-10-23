@@ -53,17 +53,15 @@ jobs:
           cache-dependency-path: tests/host/go.sum
       - name: Install the tested actionlint host revision
         shell: bash
-        run: |
-          go -C tests/host build -mod=readonly \
-            -o "$(go env GOPATH)/bin/actionlint" actionlint.kjanat.dev/v2/cmd/actionlint
+        run: go -C tests/host build -mod=readonly
+          -o "$(go env GOPATH)/bin/actionlint"
+          actionlint.kjanat.dev/v2/cmd/actionlint
       - name: Verify fresh installation and locked offline checking
         shell: bash
-        run: |
-          python3 -B scripts/verify_installation.py \
-            --actionlint "$(go env GOPATH)/bin/actionlint" \
-            --version "${RELEASE_TAG}" --sha256 "${EXPECTED_SHA256}" \
-            >installation.json
-          cat installation.json
+        run: python3 -B scripts/verify_installation.py
+          --actionlint "$(go env GOPATH)/bin/actionlint"
+          --version "${RELEASE_TAG}" --sha256 "${EXPECTED_SHA256}"
+          | tee installation.json | jq .
       - name: Preserve publication receipt
         if: always() && steps.submit.outputs.submission-id != ''
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
