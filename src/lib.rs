@@ -1,6 +1,7 @@
 mod options;
 mod script;
 mod shell;
+mod sources;
 
 wit_bindgen::generate!({
     path: "wit",
@@ -25,6 +26,7 @@ use shellcheck_rs::interface::CheckSpec;
 use shellcheck_rs::interface::NoExternalSources;
 use shellcheck_rs::interface::PositionedComment;
 use shellcheck_rs::interface::Replacement;
+use shellcheck_rs::interface::System;
 
 use options::Options;
 use options::parse_shell;
@@ -76,7 +78,7 @@ pub fn descriptor() -> Descriptor {
         recommended: true,
         explanation: concat!(
             "Checks supported shell snippets with shellcheck-rs. ",
-            "External sources and rc files are not read; fixes require review."
+            "External sources require read-only host grants; rc files are not read. Fixes require review."
         )
         .to_string(),
         help: concat!(
@@ -175,7 +177,20 @@ pub fn analyze_script(script: &Script, options: &Options) -> Outcome {
         min_severity: options.severity,
         ..CheckSpec::default()
     };
-    let result = shellcheck_rs::checker::check_script_with(Rc::new(NoExternalSources), &spec);
+    let system: Rc<dyn System> = if options.external_sources {
+        Rc::new(sources::Files::new(
+            script
+                .runtime
+                .as_ref()
+                .filter(|runtime| runtime.directory_known)
+                .map(|runtime| runtime.directory.as_str()),
+            &options.source_path,
+            &options.source_roots,
+        ))
+    } else {
+        Rc::new(NoExternalSources)
+    };
+    let result = shellcheck_rs::checker::check_script_with(system, &spec);
     map_result(script, &prepared, &source, &setup, &name, result)
 }
 
@@ -198,6 +213,10 @@ fn map_result(
     let mut findings = Vec::new();
     for comment in &result.comments {
         if comment.start.file != FILENAME {
+            match sources::diagnostic(comment) {
+                Ok(finding) => findings.push(finding),
+                Err(error) => errors.push(error),
+            }
             continue;
         }
         let line = prepared.original_line(comment.start.line);

@@ -1,3 +1,4 @@
+use crate::sources::SourceRoot;
 use serde::Deserialize;
 use shellcheck_rs::Severity;
 use shellcheck_rs::Shell;
@@ -10,6 +11,9 @@ struct Raw {
     enable: Vec<String>,
     extended_analysis: Option<bool>,
     severity: Option<String>,
+    external_sources: bool,
+    source_path: Vec<String>,
+    source_roots: Vec<SourceRoot>,
 }
 
 pub fn schema() -> serde_json::Value {
@@ -43,6 +47,9 @@ pub fn schema() -> serde_json::Value {
                 "type": "array",
                 "items": {"type": "string", "enum": optional_names}
             },
+            "external-sources": {"type": "boolean", "description": "Follow sources only within read-only filesystem grants supplied by the host."},
+            "source-path": {"type": "array", "items": {"type": "string"}},
+            "source-roots": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["host", "guest"], "properties": {"host": {"type": "string"}, "guest": {"type": "string"}}}},
             "extended-analysis": {"type": "boolean"},
             "severity": {"type": "string", "enum": ["error", "warning", "info", "style"]}
         }
@@ -55,6 +62,9 @@ pub struct Options {
     pub enable: Vec<String>,
     pub extended_analysis: Option<bool>,
     pub severity: Severity,
+    pub external_sources: bool,
+    pub source_path: Vec<String>,
+    pub source_roots: Vec<SourceRoot>,
 }
 
 pub fn parse_shell(name: &str) -> Option<Shell> {
@@ -125,6 +135,9 @@ impl Options {
             enable: raw.enable,
             extended_analysis: raw.extended_analysis,
             severity,
+            external_sources: raw.external_sources,
+            source_path: raw.source_path,
+            source_roots: raw.source_roots,
         })
     }
 }
