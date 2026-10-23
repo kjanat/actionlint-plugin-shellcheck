@@ -51,7 +51,7 @@ fn metadata() -> Result<Vec<u8>> {
         "contract_sha256": digest(WIT.replace("\r\n", "\n").as_bytes()),
         "engine": {"name": "shellcheck-rs", "version": "1.0.0"},
         "languages": ["shell"],
-        "capabilities": {"filesystem": false, "network": false, "fixes": true},
+        "capabilities": {"filesystem": true, "network": false, "fixes": true},
         "descriptor": {
             "name": rule.name,
             "description": rule.description,
@@ -205,6 +205,7 @@ mod tests {
             false
         );
         assert_eq!(value["descriptor"]["name"], "shellcheck-rs");
+        assert_eq!(value["capabilities"]["filesystem"], true);
         Ok(())
     }
 }
