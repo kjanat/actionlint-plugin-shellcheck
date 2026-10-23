@@ -3,17 +3,21 @@
 ShellCheck for the `run:` steps actionlint analyzes, as a WebAssembly component built on
 [shellcheck-rs](https://github.com/kjanat/shellcheck-rs). The component implements
 `kjanat:actionlint/analyzer@0.1.0` from [`wit/analyzer.wit`](wit/analyzer.wit). Its component identity is
-`shellcheck-rs`; actionlint exposes its findings under the standard `shellcheck` rule. actionlint runs it in a fresh
-instance per document; no ShellCheck executable, filesystem, network or environment is involved.
+`shellcheck-rs`; the official registry installation exposes its findings under the standard `shellcheck` rule.
+actionlint runs it in a fresh instance per document. Source reads use explicit read-only host grants;
+no native ShellCheck executable or network access is needed.
 
 ## Use
 
 ```sh
-actionlint check --plugin artifacts/plugin.wasm
+actionlint plugin install shellcheck
+actionlint check
 ```
 
-The host selects this plugin as the ShellCheck backend. No native ShellCheck installation is needed.
+The registry installation selects this plugin as the ShellCheck backend.
 `--no-shellcheck` or `tools.shellcheck.enabled: false` disables ShellCheck analysis, including this plugin.
+Loading the artifact directly with `--plugin artifacts/plugin.wasm` creates a standalone analyzer instead,
+configured under `lint.rules.plugins.shellcheck-rs`; it receives no automatic filesystem grants.
 
 Each finding carries the ShellCheck code as `code`, the ShellCheck level as `severity`, the message in the form
 `shellcheck reported issue in this script: SC2086:info:1:6: ...` and, when ShellCheck offers one, a fix with edits
@@ -39,6 +43,9 @@ The host passes a JSON object; every key is optional:
 | `enable`            | Exact optional-check names such as `require-variable-braces`, or `all`; not diagnostic codes                              |
 | `extended-analysis` | Enable or disable dataflow analysis                                                                                       |
 | `severity`          | Lowest reported level: `error`, `warning`, `info` or `style`                                                              |
+| `external-sources`  | Follow sources within the read-only directories granted by the host; default false                                        |
+| `source-path`       | Source search directories in the guest filesystem                                                                         |
+| `source-roots`      | Host-to-guest path mappings supplied by the adapter; mappings do not grant file access                                    |
 
 Unknown keys and invalid values fail the analysis with a message naming the key.
 The rule exposes a generated options schema for editor/tool discovery, also packaged as `artifacts/schema.json`.
@@ -46,6 +53,14 @@ An explicit dialect option does not turn an unknown or unsupported runtime shell
 `disable` identifies emitted diagnostics by number; `enable` selects optional analysis passes by name. Unknown
 optional-check names, misspellings and numeric enable selectors are rejected. Both schema and validation use
 shellcheck-rs's typed optional-check catalogue; no CLI output parsing or copied catalogue is involved.
+
+For the managed plugin, `tools.shellcheck.config.external-sources: true` grants
+the workspace read-only. Explicit `source-path` directories also enable access
+and can select directories outside the workspace. The host maps absolute source
+directives into those grants, records actual reads and keeps file snapshots for
+the duration of the call. Clean and transitively sourced files are dependencies
+even when they emit no findings. ShellCheck directives cannot expand the host's
+grants. Rc files still require the native adapter.
 
 ## Build
 
@@ -63,7 +78,7 @@ repackaging the same input produces identical bytes. The declaration's contract 
 vendored WIT with LF line endings, matching actionlint's contract identity. The runtime descriptor and static
 declaration share rule metadata. This is a component, not the core-Wasm script-engine ABI.
 
-The vendored contract and host tests target actionlint revision `73105c6dc5ce63e87584a11cf5f60a524695e108`.
+The vendored contract and host tests target actionlint revision `7707d104ab1efc6310b23eafec48a3866ad5c6d1`.
 Update them together when the contract changes; the full structural interface is checked when loading.
 Packaging and local validation do not publish a GitHub release or registry entry.
 
