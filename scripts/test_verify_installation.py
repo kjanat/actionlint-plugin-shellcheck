@@ -6,6 +6,13 @@ import verify_installation
 
 
 class InstallationProofTests(unittest.TestCase):
+    def test_explicit_release_requires_both_version_and_digest(self):
+        for version, checksum in (("v0.1.1", None), (None, "0" * 64)):
+            with self.subTest(version=version), self.assertRaisesRegex(
+                ValueError, "both release version and SHA-256"
+            ):
+                verify_installation.verify(Path("unused"), version, checksum)
+
     def test_contract_includes_packaged_wit_digest_with_lf_normalization(self):
         wit = (
             Path(__file__).resolve().parents[1] / "wit" / "analyzer.wit"

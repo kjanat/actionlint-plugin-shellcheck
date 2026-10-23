@@ -63,10 +63,14 @@ def check_result(result):
     return diagnostics
 
 
-def verify(binary, version, checksum):
-    if not re.fullmatch(r"[0-9a-f]{64}", checksum):
+def verify(binary, version=None, checksum=None):
+    if (version is None) != (checksum is None):
+        raise ValueError("Supply both release version and SHA-256, or neither")
+    if checksum is not None and not re.fullmatch(r"[0-9a-f]{64}", checksum):
         raise ValueError("Expected a lowercase SHA-256 digest")
-    if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?", version):
+    if version is not None and not re.fullmatch(
+        r"v[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?", version
+    ):
         raise ValueError("Expected an exact v-prefixed release version")
     binary = binary.resolve(strict=True)
     with tempfile.TemporaryDirectory(prefix="shellcheck-install-") as temporary:
@@ -86,12 +90,10 @@ def verify(binary, version, checksum):
             HOME=str(root),
         )
         host = run(binary, ["version", "--json"], root, environment)
-        run(
-            binary,
-            ["plugin", "install", REPOSITORY, "--version", version, "--json"],
-            root,
-            environment,
-        )
+        install = ["plugin", "install", REPOSITORY, "--json"]
+        if version is not None:
+            install.extend(["--version", version])
+        run(binary, install, root, environment)
         lock_path = root / ".github" / "actionlint.plugins.lock.json"
         locked = lock_path.read_bytes()
         pins = json.loads(locked)["plugins"]
@@ -101,9 +103,6 @@ def verify(binary, version, checksum):
         expected = {
             "name": REPOSITORY,
             "plugin_id": "shellcheck-rs",
-            "selector": version,
-            "version": version,
-            "sha256": checksum,
             "kind": "component",
             "contract": contract_identity(
                 (
@@ -111,8 +110,13 @@ def verify(binary, version, checksum):
                 ).read_bytes()
             ),
         }
+        if version is not None:
+            expected.update(selector=version, version=version, sha256=checksum)
         if any(pin.get(key) != value for key, value in expected.items()):
             raise ValueError(f"Unexpected installed pin: {pin}")
+        checksum = pin["sha256"]
+        if not re.fullmatch(r"[0-9a-f]{64}", checksum):
+            raise ValueError("Installed plugin has no valid SHA-256 digest")
         arguments = ["check", "--json", "--no-ruff", "workflow.yml"]
         diagnostics = check_result(run(binary, arguments, root, environment, 1))
         # Go's HTTP transport honors these variables. No remote artifact or
@@ -160,8 +164,8 @@ def verify(binary, version, checksum):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--actionlint", type=Path, required=True)
-    parser.add_argument("--version", required=True)
-    parser.add_argument("--sha256", required=True)
+    parser.add_argument("--version")
+    parser.add_argument("--sha256")
     arguments = parser.parse_args()
     print(
         json.dumps(
