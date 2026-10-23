@@ -185,6 +185,10 @@ class ReleaseTests(unittest.TestCase):
             ],
         )
         self.assertTrue(events[1][1][2]["draft"])
+        self.assertIn(
+            "https://github.com/owner/repo/blob/v0.1.0/CHANGELOG.md",
+            events[1][1][2]["body"],
+        )
         self.assertEqual(events[-1][1][2], {"draft": False})
         self.assertEqual(events[-1][2], {"method": "PATCH"})
         self.assertNotIn("--clobber", events[3][1][0])

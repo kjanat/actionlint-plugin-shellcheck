@@ -115,7 +115,8 @@ def publish(directory=Path("artifacts")):
                 "name": tag,
                 "draft": True,
                 "prerelease": "-" in tag,
-                "body": "ShellCheck component for actionlint. SHA256SUMS records the tested package.\n"
+                "body": f"See the [changelog](https://github.com/{repository}/blob/{tag}/CHANGELOG.md) for changes.\n\n"
+                "ShellCheck component for actionlint. SHA256SUMS records the tested package.\n"
                 "Registry publication is tracked by the Release workflow; a release alone is not admission.",
             },
         )
