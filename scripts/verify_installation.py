@@ -24,7 +24,7 @@ def contract_identity(wit):
     return "kjanat:actionlint/analyzer@0.1.0#sha256=" + checksum
 
 
-def run(binary, arguments, root, environment, expected=0):
+def execute(binary, arguments, root, environment, expected=0):
     result = subprocess.run(
         [str(binary), *arguments],
         cwd=root,
@@ -39,7 +39,11 @@ def run(binary, arguments, root, environment, expected=0):
             f"{arguments}: exit {result.returncode}, expected {expected}\n"
             f"{result.stdout}\n{result.stderr}"
         )
-    return json.loads(result.stdout)
+    return result
+
+
+def run(binary, arguments, root, environment, expected=0):
+    return json.loads(execute(binary, arguments, root, environment, expected).stdout)
 
 
 def check_result(result):
@@ -136,11 +140,20 @@ def verify(binary, version, checksum):
             raise ValueError(
                 "Verified release bytes are missing from the isolated cache"
             )
+        cached = next(path for path in artifacts if path.is_file())
+        cached.unlink()
+        missing = execute(binary, arguments, root, offline, 3)
+        if missing.stdout.strip() or "plugin" not in missing.stderr.lower():
+            raise ValueError(
+                "Offline checking without the plugin must report a plugin error: "
+                + missing.stderr
+            )
         return {
             "host": host,
             "pin": pin,
             "diagnostic": diagnostics[0],
             "locked_check_with_blocked_proxy": "passed",
+            "missing_artifact_with_blocked_proxy": "rejected",
         }
 
 

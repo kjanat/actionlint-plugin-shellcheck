@@ -124,6 +124,11 @@ the same component through actionlint's public `plugin` package, checking positi
 parity and package checksums. `ACTIONLINT_PLUGIN_SHELLCHECK` selects another packaged component with its sidecars.
 Native tests also cover partial dataflow/startup failures without discarding other findings.
 
+PR CI installs a pinned published release into an empty cache and verifies its digest, lockfile and SC2086 finding.
+It repeats checking with a blocked proxy, then removes the cached Wasm and requires checking to fail.
+The `installation-verification` artifact retains the result. The tag workflow performs the same checks for the
+newly published version.
+
 ## License
 
 GPL-3.0-or-later, as shellcheck-rs and ShellCheck.

@@ -7,7 +7,6 @@ toolchain go1.27.3
 require (
 	actionlint.kjanat.dev/v2 v2.0.0-20261023213534-a30ed059a11e
 	github.com/kjanat/wacogo v0.1.0
-	go.yaml.in/yaml/v4 v4.0.0-rc.6
 )
 
 require (
@@ -25,6 +24,7 @@ require (
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/tetratelabs/wazero v1.11.1-0.20260418165552-5cb4bb3ec0c1 // indirect
+	go.yaml.in/yaml/v4 v4.0.0-rc.6 // indirect
 	golang.org/x/mod v0.42.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
