@@ -1,9 +1,15 @@
-use std::path::{Component, Path, PathBuf};
+use std::path::Component;
+use std::path::Path;
+use std::path::PathBuf;
 
 use serde::Deserialize;
 
-use exports::kjanat::actionlint::analyzer::{Diagnostic, Position};
-use shellcheck_rs::interface::{PositionedComment, System, decode_bytes, not_an_input};
+use exports::kjanat::actionlint::analyzer::Diagnostic;
+use exports::kjanat::actionlint::analyzer::Position;
+use shellcheck_rs::interface::PositionedComment;
+use shellcheck_rs::interface::System;
+use shellcheck_rs::interface::decode_bytes;
+use shellcheck_rs::interface::not_an_input;
 
 use crate::exports;
 
@@ -168,7 +174,8 @@ pub fn diagnostic(comment: &PositionedComment) -> Result<Diagnostic, String> {
 mod tests {
     use std::path::PathBuf;
 
-    use super::{Files, SourceRoot};
+    use super::Files;
+    use super::SourceRoot;
 
     #[test]
     fn host_paths_map_only_to_declared_roots() {

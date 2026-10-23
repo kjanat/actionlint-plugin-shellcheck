@@ -2,8 +2,10 @@ module example.com/actionlint-plugin-shellcheck/tests/host
 
 go 1.27.0
 
+toolchain go1.27.3
+
 require (
-	actionlint.kjanat.dev/v2 v2.0.0-20261023205025-7707d104ab1e
+	actionlint.kjanat.dev/v2 v2.0.0-20261023213534-a30ed059a11e
 	github.com/kjanat/wacogo v0.1.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.6
 )
