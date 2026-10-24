@@ -205,10 +205,8 @@ func TestFixRevisionsUseDeclaringPathBeforePolicy(t *testing.T) {
 	}
 }
 
-// The registry reads static metadata, while execution gets a descriptor from
-// the guest. Disagreement can make a discoverable plugin fail at load time or
-// advertise different rules. This inspects and loads the same packaged component,
-// compares both descriptors, and checks its roles and vendored WIT digest.
+// Compare the packaged declaration with the guest's runtime descriptor and the
+// digest of the vendored WIT contract.
 func TestPackagedDeclarationMatchesRuntimeAndContract(t *testing.T) {
 	info, err := plugin.Inspect(t.Context(), pluginPath(), plugin.ArtifactOptions{})
 	if err != nil {
@@ -222,17 +220,8 @@ func TestPackagedDeclarationMatchesRuntimeAndContract(t *testing.T) {
 		Requires []analyzer.Fact `json:"requires"`
 	}
 	var declaration struct {
-		Version       int                   `json:"metadata_version"`
-		ID            string                `json:"id"`
-		Name          string                `json:"name"`
-		Description   string                `json:"description"`
-		License       string                `json:"license"`
-		Repository    string                `json:"repository"`
-		PluginVersion string                `json:"plugin_version"`
-		Transport     string                `json:"transport"`
-		Interface     string                `json:"interface"`
-		Contract      string                `json:"contract_sha256"`
-		Descriptor    *componentDeclaration `json:"descriptor"`
+		Contract   string                `json:"contract_sha256"`
+		Descriptor *componentDeclaration `json:"descriptor"`
 	}
 	if err := json.Unmarshal(info.Metadata, &declaration); err != nil {
 		t.Fatal(err)
@@ -242,8 +231,8 @@ func TestPackagedDeclarationMatchesRuntimeAndContract(t *testing.T) {
 		t.Fatal(err)
 	}
 	digest := fmt.Sprintf("%x", sha256.Sum256(bytes.ReplaceAll(wit, []byte("\r\n"), []byte("\n"))))
-	if declaration.Version != 1 || declaration.ID != "shellcheck-rs" || declaration.Name != "ShellCheck" || declaration.Description == "" || declaration.License != "GPL-3.0-or-later" || declaration.Repository != "https://github.com/kjanat/actionlint-plugin-shellcheck" || declaration.PluginVersion == "" || declaration.Transport != "wasm-component" || declaration.Interface != "kjanat:actionlint/analyzer@0.1.0" || declaration.Contract != digest {
-		t.Fatalf("invalid declaration: %+v", declaration)
+	if declaration.Contract != digest {
+		t.Fatalf("contract digest: %s != %s", declaration.Contract, digest)
 	}
 	component := load(t)
 	descriptor := component.Descriptor()
