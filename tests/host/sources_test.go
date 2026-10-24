@@ -34,6 +34,10 @@ func sourceScript(text string) analyzer.Script {
 	return script
 }
 
+// Dependency tracking needs source reads even when those files produce no
+// findings. This executes the Wasm with workspace and external mounts and records
+// the files it opens, including a nested source and an absolute host-path mapping.
+// Checking the reads catches an analyzer that appears clean only because it skipped them.
 func TestGrantedSourcesIncludeCleanNestedAndExternalFiles(t *testing.T) {
 	component := load(t)
 	files := &sourceFiles{FS: fstest.MapFS{
@@ -70,6 +74,10 @@ printf '%s\n' "$VALUE" "$FLAGS" "$SHARED"
 	}
 }
 
+// Reusing a component must not reuse stale source contents from an earlier call.
+// This analyzes the same script twice while changing a sourced value from one
+// word to two. The resulting SC2086 warning must change with the source file,
+// checking that each call reads the supplied filesystem with its updated content.
 func TestSourceEditChangesSubsequentAnalysis(t *testing.T) {
 	component := load(t)
 	for _, tc := range []struct {
@@ -91,6 +99,10 @@ func TestSourceEditChangesSubsequentAnalysis(t *testing.T) {
 	}
 }
 
+// A syntax error in a sourced file must lead users back to the workflow's source
+// invocation. This runs the component against a broken sourced script and checks
+// the SC1094 finding's workflow path, reference and position. Losing that mapping
+// would either hide the error or send the editor to an unrelated location.
 func TestSourcedParseFailureIsReportedAtInvocation(t *testing.T) {
 	component := load(t)
 	findings, err := component.Analyze(t.Context(), analyzer.Input{
@@ -114,6 +126,10 @@ func TestSourcedParseFailureIsReportedAtInvocation(t *testing.T) {
 	t.Fatalf("source parse failure lost: %+v", findings)
 }
 
+// An unknown working directory still allows absolute source paths, but gives no
+// safe base for relative ones. This records actual guest reads across absolute
+// paths, search directories, host mappings and absent runtime facts. It catches
+// both skipped readable sources and relative reads resolved against an invented base.
 func TestUnknownDirectoryUsesOnlyIndependentSourcePaths(t *testing.T) {
 	component := load(t)
 	for _, tc := range []struct {
@@ -148,6 +164,10 @@ func TestUnknownDirectoryUsesOnlyIndependentSourcePaths(t *testing.T) {
 	}
 }
 
+// ShellCheck searches relative candidates before an absolute source name, so two
+// readable files can give different analysis depending on lookup order. This
+// supplies conflicting source values and checks the resulting SC2086 warning,
+// then removes the relative candidate to check the absolute-path fallback.
 func TestAbsoluteSourceSearchOrderMatchesShellCheck(t *testing.T) {
 	component := load(t)
 	for _, shadow := range []bool{true, false} {

@@ -160,49 +160,74 @@ fn set_option(option: &str) -> bool {
 mod tests {
     use super::analysis;
 
+    // Shell invocation flags determine the startup semantics ShellCheck should
+    // analyze, including options later disabled by another flag. This table checks
+    // implicit versus explicit shells, executable paths and option ordering. It
+    // also rejects inference from quoted, dynamic or unrelated command arguments.
     #[test]
-    fn startup_matches_the_host() {
-        for (name, setup, implicit) in [
-            ("bash", "set -e", true),
-            ("bash", "set -e -o pipefail", false),
-            ("BASH", "set -e -o pipefail", false),
-            ("sh", "set -e", true),
-            ("bash {0}", "", false),
-            ("bash -e {0}", "set -e", false),
-            ("bash -eu -o pipefail {0}", "set -eu -o pipefail", false),
-            ("bash -euxo pipefail {0}", "set -eux -o pipefail", false),
+    fn shell_arguments_select_startup_options() {
+        for (name, dialect, setup, implicit) in [
+            ("bash", "bash", "set -e", true),
+            ("bash", "bash", "set -e -o pipefail", false),
+            ("BASH", "bash", "set -e -o pipefail", false),
+            ("sh", "sh", "set -e", true),
+            ("bash {0}", "bash", "", false),
+            ("bash -e {0}", "bash", "set -e", false),
+            (
+                "bash -eu -o pipefail {0}",
+                "bash",
+                "set -eu -o pipefail",
+                false,
+            ),
+            (
+                "bash -euxo pipefail {0}",
+                "bash",
+                "set -eux -o pipefail",
+                false,
+            ),
             (
                 "/usr/bin/bash -euxo pipefail {0}",
+                "bash",
                 "set -eux -o pipefail",
                 false,
             ),
             (
                 r"C:\tools\bash.exe -eo pipefail {0}",
+                "bash",
                 "set -e -o pipefail",
                 false,
             ),
-            ("dash -eu {0}", "set -eu", false),
-            ("ksh -eu {0}", "set -eu", false),
-            ("bash -euo pipefail +e +o pipefail {0}", "set -u", false),
-            ("bash -o errexit +e {0}", "", false),
-            ("bash -e +o errexit {0}", "", false),
-            ("bash +e -o errexit {0}", "set -e", false),
-            ("bash -e -- {0}", "set -e", false),
-            ("bash -o noglob {0}", "set -f", false),
-            ("bash -o future-option {0}", "", false),
-            ("bash -e +e {0}", "", false),
-            ("bash -o 'pipefail' {0}", "", false),
-            ("bash -o \"pipefail\" {0}", "", false),
-            ("bash ${{ vars.FLAGS }} {0}", "", false),
-            ("bash --rcfile custom {0}", "", false),
-            ("bash {0} -e", "", false),
+            ("dash -eu {0}", "dash", "set -eu", false),
+            ("ksh -eu {0}", "ksh", "set -eu", false),
+            (
+                "bash -euo pipefail +e +o pipefail {0}",
+                "bash",
+                "set -u",
+                false,
+            ),
+            ("bash -o errexit +e {0}", "bash", "", false),
+            ("bash -e +o errexit {0}", "bash", "", false),
+            ("bash +e -o errexit {0}", "bash", "set -e", false),
+            ("bash -e -- {0}", "bash", "set -e", false),
+            ("bash -o noglob {0}", "bash", "set -f", false),
+            ("bash -o future-option {0}", "bash", "", false),
+            ("bash -e +e {0}", "bash", "", false),
+            ("bash -o 'pipefail' {0}", "bash", "", false),
+            ("bash -o \"pipefail\" {0}", "bash", "", false),
+            ("bash ${{ vars.FLAGS }} {0}", "bash", "", false),
+            ("bash --rcfile custom {0}", "bash", "", false),
+            ("bash {0} -e", "bash", "", false),
         ] {
-            let (dialect, got) = analysis(name, implicit);
-            assert!(!dialect.is_empty(), "{name}: no dialect");
+            let (got_dialect, got) = analysis(name, implicit);
+            assert_eq!(got_dialect, dialect, "{name}");
             assert_eq!(got, setup, "{name}");
         }
     }
 
+    // A command containing the word bash does not necessarily execute the supplied
+    // script as shell source. These wrappers, command-string modes and alternate
+    // languages must yield no inferred dialect or startup commands, preventing
+    // later analysis from applying shell rules to code it cannot identify safely.
     #[test]
     fn unknown_languages_are_skipped() {
         for name in [

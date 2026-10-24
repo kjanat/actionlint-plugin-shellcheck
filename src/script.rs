@@ -2,6 +2,35 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 
+use crate::exports::kjanat::actionlint::analyzer::Position;
+
+pub struct Comment {
+    pub text: String,
+    pub start: Position,
+}
+
+pub fn directives(comments: Vec<Comment>) -> Vec<Comment> {
+    comments
+        .into_iter()
+        .filter(|comment| {
+            comment
+                .text
+                .strip_prefix('#')
+                .is_some_and(|text| text.trim_start().starts_with("shellcheck"))
+        })
+        .collect()
+}
+
+pub fn annotated_header(source: &str, comments: &[Comment]) -> String {
+    let mut text = String::new();
+    for comment in comments {
+        text.push_str(&comment.text);
+        text.push('\n');
+    }
+    text.push_str(header(source).0);
+    text
+}
+
 static SHELL_DIRECTIVE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r##"^[\t ]*#[\t ]*shellcheck[\t ]+(?:[a-z-]+=(?:"[^"\r\n]*"|'[^'\r\n]*'|[^'"#\t \r\n][^#\t \r\n]*)[\t ]+)*?shell="##)
         .unwrap_or_else(|error| panic!("shell directive pattern: {error}"))
@@ -69,22 +98,32 @@ pub fn sanitize_expressions(source: &str) -> String {
 
 pub struct Prepared {
     pub text: String,
-    source_lines: Vec<u32>,
+    source_lines: Vec<Line>,
     pub startup_line: usize,
 }
 
+enum Line {
+    Source(u32),
+    Comment(Position),
+    Startup,
+}
+
 pub fn prepare(source: &str, setup: &str) -> Prepared {
+    prepare_annotated(source, setup, &[])
+}
+
+pub fn prepare_annotated(source: &str, setup: &str, comments: &[Comment]) -> Prepared {
     let (mut header, body, _) = header(source);
     let mut text = String::new();
     let mut source_lines = Vec::new();
     let mut original = 0;
-    let mut write_source = |piece: &str, text: &mut String, source_lines: &mut Vec<u32>| {
+    let mut write_source = |piece: &str, text: &mut String, source_lines: &mut Vec<Line>| {
         for line in piece.split_inclusive('\n') {
             if line.is_empty() {
                 continue;
             }
             original += 1;
-            source_lines.push(original);
+            source_lines.push(Line::Source(original));
             text.push_str(line);
             if !line.ends_with('\n') {
                 text.push('\n');
@@ -99,18 +138,23 @@ pub fn prepare(source: &str, setup: &str) -> Prepared {
         write_source(line, &mut text, &mut source_lines);
         header = rest;
     }
+    for comment in comments {
+        text.push_str(&comment.text);
+        text.push('\n');
+        source_lines.push(Line::Comment(comment.start));
+    }
     write_source(header, &mut text, &mut source_lines);
     let mut startup_line = 0;
     if !setup.is_empty() {
         text.push_str(setup);
         text.push('\n');
-        source_lines.push(0);
+        source_lines.push(Line::Startup);
         startup_line = source_lines.len();
     }
     write_source(body, &mut text, &mut source_lines);
     if text.is_empty() {
         text.push('\n');
-        source_lines.push(0);
+        source_lines.push(Line::Startup);
     }
     Prepared {
         text,
@@ -120,10 +164,23 @@ pub fn prepare(source: &str, setup: &str) -> Prepared {
 }
 
 impl Prepared {
+    pub fn comment_position(&self, line: i64, column: i64) -> Option<Position> {
+        let index = usize::try_from(line.checked_sub(1)?).ok()?;
+        let Line::Comment(start) = self.source_lines.get(index)? else {
+            return None;
+        };
+        Some(Position {
+            line: start.line,
+            column: start
+                .column
+                .checked_add(u32::try_from(column).ok()?.checked_sub(1)?)?,
+        })
+    }
+
     pub fn original_line(&self, line: i64) -> u32 {
         if line == self.source_lines.len() as i64 + 1 {
             for source in self.source_lines.iter().rev() {
-                if *source != 0 {
+                if let Line::Source(source) = source {
                     return source + 1;
                 }
             }
@@ -131,7 +188,10 @@ impl Prepared {
         if line < 1 || line > self.source_lines.len() as i64 {
             return 0;
         }
-        self.source_lines[line as usize - 1]
+        match self.source_lines[line as usize - 1] {
+            Line::Source(source) => source,
+            Line::Comment(_) | Line::Startup => 0,
+        }
     }
 
     pub fn lines(&self) -> Vec<&str> {
@@ -174,6 +234,10 @@ mod tests {
     use super::real_column;
     use super::sanitize_expressions;
 
+    // ShellCheck directives are meaningful in the initial comment header, where
+    // setup commands must not displace them. This checks header splitting, quoted
+    // dialects and malformed directives, and verifies that a later comment cannot
+    // retroactively select the script's dialect.
     #[test]
     fn header_detects_shell_directives() {
         let (head, body, selects) =
@@ -198,6 +262,10 @@ mod tests {
         );
     }
 
+    // Expression masking must remove GitHub syntax without moving subsequent
+    // shell tokens or changing line counts. These exact string cases check those
+    // positional properties, including a multiline expression and unfinished input,
+    // before engine findings depend on the resulting source map.
     #[test]
     fn expressions_become_underscores() {
         assert_eq!(
@@ -211,6 +279,10 @@ mod tests {
         assert_eq!(sanitize_expressions("plain ${{ open"), "plain ${{ open");
     }
 
+    // The adapter inserts shell startup commands after the source header. That
+    // synthetic line needs no source location, while every original line must map
+    // back correctly. This checks the prepared text and mapping together, including
+    // empty and out-of-range inputs that could otherwise create bogus positions.
     #[test]
     fn prepared_scripts_map_back_to_source_lines() {
         let prepared = prepare("#!/bin/bash\n# comment\necho one\necho two", "set -e");
@@ -231,6 +303,35 @@ mod tests {
         assert_eq!(empty.original_line(1), 0);
     }
 
+    #[test]
+    fn attached_comments_follow_shebang_and_have_independent_positions() {
+        let comments = [super::Comment {
+            text: "# shellcheck disable=SC2086".to_string(),
+            start: crate::Position { line: 2, column: 9 },
+        }];
+        let prepared =
+            super::prepare_annotated("#!/bin/bash\n# native\necho $x", "set -e", &comments);
+        assert_eq!(
+            prepared.text,
+            "#!/bin/bash\n# shellcheck disable=SC2086\n# native\nset -e\necho $x\n"
+        );
+        assert_eq!(
+            (1..=6)
+                .map(|line| prepared.original_line(line))
+                .collect::<Vec<_>>(),
+            vec![1, 0, 2, 0, 3, 4]
+        );
+        let position = prepared
+            .comment_position(2, 14)
+            .expect("attached source position");
+        assert_eq!((position.line, position.column), (2, 22));
+        assert!(prepared.comment_position(4, 1).is_none());
+    }
+
+    // ShellCheck measures columns using tab stops, but workflow positions count
+    // characters. These boundary cases check positions inside and after a tab,
+    // alongside ordinary and beyond-line columns. A wrong conversion would place
+    // diagnostics and quote edits on the wrong character even with correct line maps.
     #[test]
     fn tab_columns_realign() {
         assert_eq!(real_column("\techo $x", 9), 2);
