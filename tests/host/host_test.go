@@ -205,9 +205,8 @@ func TestFixRevisionsUseDeclaringPathBeforePolicy(t *testing.T) {
 	}
 }
 
-// Compare the packaged declaration with the guest's runtime descriptor and the
-// digest of the vendored WIT contract.
-func TestPackagedDeclarationMatchesRuntimeAndContract(t *testing.T) {
+// Compare the packaged declaration with the descriptor exported by the loaded guest.
+func TestPackagedDeclarationMatchesRuntime(t *testing.T) {
 	info, err := plugin.Inspect(t.Context(), pluginPath(), plugin.ArtifactOptions{})
 	if err != nil {
 		t.Fatal(err)
@@ -220,19 +219,10 @@ func TestPackagedDeclarationMatchesRuntimeAndContract(t *testing.T) {
 		Requires []analyzer.Fact `json:"requires"`
 	}
 	var declaration struct {
-		Contract   string                `json:"contract_sha256"`
 		Descriptor *componentDeclaration `json:"descriptor"`
 	}
 	if err := json.Unmarshal(info.Metadata, &declaration); err != nil {
 		t.Fatal(err)
-	}
-	wit, err := os.ReadFile(filepath.Join("..", "..", "wit", "analyzer.wit"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	digest := fmt.Sprintf("%x", sha256.Sum256(bytes.ReplaceAll(wit, []byte("\r\n"), []byte("\n"))))
-	if declaration.Contract != digest {
-		t.Fatalf("contract digest: %s != %s", declaration.Contract, digest)
 	}
 	component := load(t)
 	descriptor := component.Descriptor()

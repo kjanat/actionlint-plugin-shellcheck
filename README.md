@@ -2,7 +2,9 @@
 
 ShellCheck for the `run:` steps actionlint analyzes, as a WebAssembly component built on
 [shellcheck-rs](https://github.com/kjanat/shellcheck-rs). The component implements
-`kjanat:actionlint/analyzer@0.1.0` from [`wit/analyzer.wit`](wit/analyzer.wit). Its component identity is
+`kjanat:actionlint/analyzer@0.1.0` through
+[`actionlint-extension-api`](https://github.com/kjanat/actionlint/tree/9a119d842458ddc03e2e64f171b8d544832afaa2/crates/actionlint-extension-api).
+Its component identity is
 `shellcheck-rs`; the official registry installation exposes its findings under the standard `shellcheck` rule.
 actionlint runs it in a fresh instance per document. Source reads use explicit read-only host grants;
 no native ShellCheck executable or network access is needed.
@@ -31,6 +33,23 @@ for an explicit `bash`. Without a shell directive, steps whose shell is unknown,
 that hides the script are skipped. `${{ }}` expressions are masked before analysis, and SC1091, SC2194, SC2050, SC2153,
 SC2154, SC2157 and
 SC2043 are excluded for the same reasons the built-in rule excludes them.
+
+ShellCheck directives attached as YAML comments apply to that script:
+
+```yaml
+- name: Leading directive
+  # shellcheck disable=SC2086
+  run: echo $HI
+- run: echo $HI # shellcheck disable=SC2086
+- run: | # shellcheck disable=SC2086
+    echo $HI
+```
+
+The host supplies these comments through `kjanat:actionlint/source-annotations@0.1.0`, independently of script text.
+The artifact requires a host providing that optional interface. Directives inside block scalars keep normal ShellCheck
+scope; trailing directives inside shell text retain ShellCheck's placement error. Invalid YAML directives point at
+their comment. Script findings and fixes retain their original positions, including anchored scripts and invoked
+composite actions. Alias-use YAML directives apply only to that declaration.
 
 ## Options
 
@@ -80,12 +99,14 @@ cargo run --locked --features package --bin package -- target/wasm32-wasip2/rele
 Distribute `artifacts/plugin.wasm`. The package also contains `metadata.json`, `schema.json`, `LICENSE` and
 `SHA256SUMS`. Packaging preserves the component and prepends its top-level `actionlint.plugin` discovery section;
 repackaging the same input produces identical bytes. The declaration's contract checksum is SHA-256 of the
-vendored WIT with LF line endings, matching actionlint's contract identity. The runtime descriptor and static
+SDK's canonical analyzer WIT with LF line endings, matching actionlint's contract identity. The runtime descriptor and
+static
 declaration share rule metadata. This is a component, not the core-Wasm script-engine ABI.
 
-The vendored contract and host tests target actionlint revision
-[kjanat/actionlint@`2fa382b984be`](https://github.com/kjanat/actionlint/commit/2fa382b984bee67e014a112f4cbfba9604efb983).
-Update them together when the contract changes. The full structural interface is checked when loading.
+The SDK owns guest bindings, the component export macro and native packaging. This plugin supplies its
+descriptor, Cargo identity, engine, capabilities and license. Its `source-annotations` feature imports
+attached YAML comments from compatible hosts; the original analyzer interface remains unchanged.
+The full structural interface is checked when loading.
 
 ## Release
 

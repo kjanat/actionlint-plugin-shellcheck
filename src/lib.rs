@@ -3,10 +3,8 @@ mod script;
 mod shell;
 mod sources;
 
-wit_bindgen::generate!({
-    path: "wit",
-    world: "plugin",
-});
+pub use actionlint_extension_api::exports;
+pub use actionlint_extension_api::kjanat;
 
 use std::rc::Rc;
 
@@ -35,7 +33,7 @@ pub const NAME: &str = "shellcheck-rs";
 pub const FILENAME: &str = "actionlint.sh";
 const EXCLUDED: &[i64] = &[1091, 2194, 2050, 2153, 2154, 2157, 2043];
 
-struct Plugin;
+pub struct Plugin;
 
 impl Guest for Plugin {
     fn describe() -> Descriptor {
@@ -61,7 +59,8 @@ impl Guest for Plugin {
                     if script.path.is_empty() {
                         script.path.clone_from(&input.path);
                     }
-                    analyze_script(&script, &options)
+                    let comments = attached_comments(&script);
+                    analyze_script_with_comments(&script, &options, comments)
                 }),
         )
     }
@@ -111,7 +110,7 @@ fn combine(outcomes: impl IntoIterator<Item = Outcome>) -> Outcome {
 }
 
 #[cfg(target_arch = "wasm32")]
-export!(Plugin);
+actionlint_extension_api::export_plugin!(Plugin);
 
 #[cfg(target_arch = "wasm32")]
 fn debug(message: &str) {
@@ -131,9 +130,45 @@ fn shell_of(script: &Script) -> (String, bool) {
 }
 
 pub fn analyze_script(script: &Script, options: &Options) -> Outcome {
+    analyze_script_with_comments(script, options, Vec::new())
+}
+
+#[cfg(target_arch = "wasm32")]
+fn attached_comments(script: &Script) -> Vec<script::Comment> {
+    use kjanat::actionlint::source_annotations;
+    let reference = &script.reference;
+    source_annotations::comments(&source_annotations::SourceReference {
+        document: reference.document.clone(),
+        revision: reference.revision.clone(),
+        node: reference.node.clone(),
+        address: reference.address.clone(),
+    })
+    .into_iter()
+    .map(|comment| script::Comment {
+        text: comment.text,
+        start: Position {
+            line: comment.start.line,
+            column: comment.start.column,
+        },
+    })
+    .collect()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn attached_comments(_: &Script) -> Vec<script::Comment> {
+    Vec::new()
+}
+
+fn analyze_script_with_comments(
+    script: &Script,
+    options: &Options,
+    comments: Vec<script::Comment>,
+) -> Outcome {
     let (name, implicit) = shell_of(script);
     let (inferred, mut setup) = shell::analysis(&name, implicit);
-    let (header, _, directive_shell) = script::header(&script.text);
+    let comments = script::directives(comments);
+    let annotated_header = script::annotated_header(&script.text, &comments);
+    let (header, _, directive_shell) = script::header(&annotated_header);
     if inferred.is_empty() && !directive_shell {
         debug(&format!(
             "{}:{}: skip: no supported dialect for shell {name:?}",
@@ -154,7 +189,11 @@ pub fn analyze_script(script: &Script, options: &Options) -> Outcome {
         setup = String::new();
     }
     let source = script::sanitize_expressions(&script.text);
-    let prepared = script::prepare(&source, &setup);
+    let prepared = if comments.is_empty() {
+        script::prepare(&source, &setup)
+    } else {
+        script::prepare_annotated(&source, &setup, &comments)
+    };
     let mut excluded = EXCLUDED.to_vec();
     excluded.extend(
         options
@@ -220,7 +259,9 @@ fn map_result(
             continue;
         }
         let line = prepared.original_line(comment.start.line);
-        if line == 0 {
+        let column = script::realign(&lines, comment.start.line, comment.start.column);
+        let attached = prepared.comment_position(comment.start.line, column);
+        if line == 0 && attached.is_none() {
             if comment.start.line as usize == prepared.startup_line
                 && comment.comment.severity.as_str() != "error"
             {
@@ -236,7 +277,6 @@ fn map_result(
             ));
             continue;
         }
-        let column = script::realign(&lines, comment.start.line, comment.start.column);
         let end_line = prepared.original_line(comment.end.line);
         let end_column = script::realign(&lines, comment.end.line, comment.end.column);
         let message = comment
@@ -245,8 +285,14 @@ fn map_result(
             .strip_suffix('.')
             .unwrap_or(&comment.comment.message);
         let level = comment.comment.severity.as_str();
-        let start = position(script, line, column, false).unwrap_or(script.start);
-        let end = position(script, end_line, end_column, true).unwrap_or(start);
+        let start = attached
+            .or_else(|| position(script, line, column, false))
+            .unwrap_or(script.start);
+        let end = prepared
+            .comment_position(comment.end.line, end_column)
+            .or_else(|| position(script, end_line, end_column, true))
+            .unwrap_or(start);
+        let line = if attached.is_some() { start.line } else { line };
         findings.push(Diagnostic {
             reference: Some(script.reference.clone()),
             explanation: String::new(),
@@ -446,6 +492,97 @@ mod tests {
 
     fn defaults() -> Options {
         Options::parse("").unwrap_or_else(|error| panic!("{error}"))
+    }
+
+    fn attached(text: &str, line: u32, column: u32) -> super::script::Comment {
+        super::script::Comment {
+            text: text.to_string(),
+            start: Position { line, column },
+        }
+    }
+
+    #[test]
+    fn yaml_directives_suppress_codes_without_shifting_remaining_findings_or_fixes() {
+        let source = script("echo $x\n[[ -n $x ]]", 7, 14, Some("sh"));
+        let outcome = super::analyze_script_with_comments(
+            &source,
+            &defaults(),
+            vec![attached("# shellcheck disable=SC2086", 6, 9)],
+        );
+        assert!(outcome.error.is_none(), "{:?}", outcome.error);
+        assert!(
+            outcome
+                .diagnostics
+                .iter()
+                .all(|finding| finding.code != "SC2086")
+        );
+        let bashism = outcome
+            .diagnostics
+            .iter()
+            .find(|finding| finding.code == "SC3010")
+            .expect("remaining bashism");
+        assert_eq!((bashism.start.line, bashism.start.column), (8, 14));
+
+        let source = script("echo $x", 7, 14, Some("bash"));
+        let outcome = super::analyze_script_with_comments(
+            &source,
+            &defaults(),
+            vec![attached("# shellcheck disable=SC2034", 6, 9)],
+        );
+        assert!(outcome.error.is_none(), "{:?}", outcome.error);
+        assert_eq!(outcome.diagnostics.len(), 1);
+        let quote = &outcome.diagnostics[0];
+        assert_eq!(quote.code, "SC2086");
+        assert_eq!((quote.start.line, quote.start.column), (7, 19));
+        assert_eq!((quote.end.line, quote.end.column), (7, 21));
+        let edits = &quote.fixes[0].edits;
+        assert_eq!(edits.len(), 2);
+        assert_eq!((edits[0].start.line, edits[0].start.column), (7, 19));
+        assert_eq!((edits[1].start.line, edits[1].start.column), (7, 21));
+    }
+
+    #[test]
+    fn invalid_yaml_directives_report_the_yaml_comment_position() {
+        let outcome = super::analyze_script_with_comments(
+            &script("echo ok", 7, 14, Some("bash")),
+            &defaults(),
+            vec![attached("# shellcheck shell=unknown", 6, 9)],
+        );
+        assert!(outcome.error.is_none(), "{:?}", outcome.error);
+        let finding = outcome
+            .diagnostics
+            .iter()
+            .find(|finding| finding.code == "SC1103")
+            .expect("invalid dialect diagnostic");
+        assert_eq!((finding.start.line, finding.start.column), (6, 28));
+        assert!(finding.fixes.is_empty());
+    }
+
+    #[test]
+    fn yaml_shell_directives_select_dialect_and_native_directives_still_apply() {
+        let outcome = super::analyze_script_with_comments(
+            &script(
+                "# shellcheck disable=SC2086\n[[ -n $x ]]\necho $x",
+                7,
+                14,
+                Some("pwsh"),
+            ),
+            &defaults(),
+            vec![attached("# shellcheck shell=sh", 6, 9)],
+        );
+        assert!(outcome.error.is_none(), "{:?}", outcome.error);
+        assert!(
+            outcome
+                .diagnostics
+                .iter()
+                .any(|finding| finding.code == "SC3010")
+        );
+        assert!(
+            outcome
+                .diagnostics
+                .iter()
+                .all(|finding| finding.code != "SC2086")
+        );
     }
 
     fn input(scripts: Vec<Script>, invoked: Vec<Script>) -> super::Input {
