@@ -17,7 +17,7 @@ jobs:
   build:
     runs-on: ubuntu-26.04
     timeout-minutes: 30
-    outputs: { sha256: "${{ steps.package.outputs.sha256 }}" }
+    outputs: { sha256: "${{ steps.candidate.outputs.sha256 }}" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: { persist-credentials: false }
@@ -27,12 +27,6 @@ jobs:
           cache-dependency-path: tests/host/go.sum
       - name: Install the pinned Rust toolchain
         run: rustup toolchain install
-      - name: Check release version
-        if: github.ref_type == 'tag'
-        env: { RELEASE_TAG: "${{ github.ref_name }}" }
-        run: python3 -B scripts/release.py check-tag
-      - name: Release automation tests
-        run: python3 -B -m unittest discover -s scripts -p 'test_*.py'
       - name: Unit tests
         run: cargo test --locked --all-features
       - name: Lints
@@ -49,20 +43,26 @@ jobs:
         shell: bash
         run: go -C tests/host build -mod=readonly
           -o "${RUNNER_TEMP}/actionlint" actionlint.kjanat.dev/v2/cmd/actionlint
-      - name: Install the published plugin and verify offline execution
-        shell: bash
-        run: python3 -B scripts/verify_installation.py
-          --actionlint "${RUNNER_TEMP}/actionlint"
-          | tee installation.json | jq .
+      - name: Install the candidate and verify source following offline
+        id: candidate
+        uses: kjanat/actionlint-registry/check@f709078ff93630dba56f273ae074d1f1778cfe62
+        with:
+          actionlint: ${{ runner.temp }}/actionlint
+          fixture: tests/installation.ts
+          artifact: artifacts/plugin.wasm
+          report: candidate.json
       - name: Preserve installation evidence
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: installation-verification
-          path: installation.json
+          name: candidate-verification
+          path: candidate.json
           if-no-files-found: error
-      - name: Record tested package digest
-        id: package
-        run: python3 -B scripts/release.py verify
+      - name: Preserve the tested host
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: tested-actionlint
+          path: ${{ runner.temp }}/actionlint
+          if-no-files-found: error
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: actionlint-plugin-shellcheck

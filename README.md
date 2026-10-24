@@ -84,30 +84,35 @@ vendored WIT with LF line endings, matching actionlint's contract identity. The 
 declaration share rule metadata. This is a component, not the core-Wasm script-engine ABI.
 
 The vendored contract and host tests target actionlint revision
-[kjanat/actionlint@`a30ed059a11e`](https://github.com/kjanat/actionlint/commit/a30ed059a11e5d30b26758c4a41fceafa49ee959).
+[kjanat/actionlint@`16768627b0e9`](https://github.com/kjanat/actionlint/commit/16768627b0e9cefbb28781c5793ba9f5d9689c5c).
 Update them together when the contract changes. The full structural interface is checked when loading.
 
 ## Release
 
-Enable **immutable releases** in the repository settings before the first release. Push a signed `v` tag matching
-`Cargo.toml`. The Release workflow reuses CI to build with locked dependencies, package once,
-and test that package through actionlint's public loader. A separate publication job downloads those tested bytes;
-it does not rebuild. Its `contents: write` permission publishes the five package files, and `id-token: write`
-authenticates the tag and repository to the pinned registry submission action. No publisher secret is needed.
+PR CI checks the packaged candidate before a release exists. The registry's shared `check` action exports a local
+catalogue, installs through `actionlint plugin install`, and runs [this plugin's fixture](tests/installation.ts).
+It checks source following, exact diagnostic positions, source edits and read-only grants. Checking runs again
+after deleting the catalogue, then must fail after removing the cached Wasm. The receipt records the candidate
+digest, host and fixture used. No tag, registry submission or publisher credential is needed.
+
+Enable **immutable releases** in the repository settings. Push a signed `v` tag matching `Cargo.toml`.
+Release reuses CI, then downloads the tested package and receipt. The registry's shared `publish` action requires
+both before publishing. Its `contents: write` permission publishes package files; `id-token: write` authenticates
+the tag and repository. No publisher secret is needed.
 
 The workflow stages assets in a draft, downloads and compares all five files, then publishes and requires GitHub's
 `immutable` release flag before registry submission. Existing assets must match exactly; reruns never overwrite
 different bytes. An interrupted draft can resume missing uploads. Published releases must already be complete.
 
-Registry acceptance is asynchronous. The workflow polls for up to 20 minutes and succeeds only on `published`;
+Registry acceptance is asynchronous. The workflow polls for up to 30 minutes and succeeds only on `published`;
 `pending`, `validating`, rejection, failure and timeout are not publication success. The retained
 `registry-publication-receipt` artifact records the submission ID, tested digest, status URL and last response.
 After a timeout or recoverable registry failure, inspect that URL and rerun the tag workflow (or dispatch Release
 with the existing tag selected). An identical resubmission preserves the registry identity. Branch dispatches
 cannot publish: registry OIDC authorization requires the workflow itself to run from the submitted tag.
 
-After publication, the workflow builds the same pinned actionlint host used by integration tests, installs the
-published version in a fresh project, checks an expected diagnostic and repeats checking offline with the lockfile.
+After publication, the shared action installs the exact candidate version and digest from the production registry
+and runs the same fixture with the same host revision. This checks delivery after candidate verification.
 For normal use, install the selected version using actionlint's registry installer and commit its project lockfile.
 
 ## Test
@@ -124,10 +129,9 @@ the same component through actionlint's public `plugin` package, checking positi
 parity and package checksums. `ACTIONLINT_PLUGIN_SHELLCHECK` selects another packaged component with its sidecars.
 Native tests also cover partial dataflow/startup failures without discarding other findings.
 
-PR CI installs the current registry release into an empty cache and verifies its digest, lockfile and SC2086 finding.
-It repeats checking with a blocked proxy, then removes the cached Wasm and requires checking to fail.
-The `installation-verification` artifact records the result. The tag workflow performs the same checks for the
-newly published version.
+The `candidate-verification` CI artifact contains the receipt for the package built by that run.
+The fixture also runs through the registry CLI locally; see its
+[candidate check instructions](https://github.com/kjanat/actionlint-registry#check-a-candidate).
 
 ## License
 
