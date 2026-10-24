@@ -84,7 +84,7 @@ vendored WIT with LF line endings, matching actionlint's contract identity. The 
 declaration share rule metadata. This is a component, not the core-Wasm script-engine ABI.
 
 The vendored contract and host tests target actionlint revision
-[kjanat/actionlint@`16768627b0e9`](https://github.com/kjanat/actionlint/commit/16768627b0e9cefbb28781c5793ba9f5d9689c5c).
+[kjanat/actionlint@`2fa382b984be`](https://github.com/kjanat/actionlint/commit/2fa382b984bee67e014a112f4cbfba9604efb983).
 Update them together when the contract changes. The full structural interface is checked when loading.
 
 ## Release
