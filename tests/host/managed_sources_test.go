@@ -62,7 +62,7 @@ func TestManagedSourceGrantsThroughCLI(t *testing.T) {
 		Plugins       []map[string]string `json:"plugins"`
 	}{1, []map[string]string{{
 		"registry": "https://plugins.actionlint.kjanat.dev/", "name": repository,
-		"repository_id": "1", "owner_id": "1", "plugin_id": "shellcheck-rs",
+		"repository_id": "1", "owner_id": "1", "plugin_id": "shellcheck",
 		"selector": version, "version": version, "kind": "component", "asset": "plugin.wasm",
 		"url":    "https://" + repository + "/releases/download/" + version + "/plugin.wasm",
 		"sha256": info.SHA256, "contract": metadata.Interface + "#sha256=" + metadata.Contract,

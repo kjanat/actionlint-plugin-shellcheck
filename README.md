@@ -3,9 +3,8 @@
 ShellCheck for the `run:` steps actionlint analyzes, as a WebAssembly component built on
 [shellcheck-rs](https://github.com/kjanat/shellcheck-rs). The component implements
 `kjanat:actionlint/analyzer@0.1.0` through
-[`actionlint-extension-api`](https://github.com/kjanat/actionlint/tree/9a119d842458ddc03e2e64f171b8d544832afaa2/crates/actionlint-extension-api).
-Its component identity is
-`shellcheck-rs`; the official registry installation exposes its findings under the standard `shellcheck` rule.
+[`actionlint-extension-api`](vendor/actionlint-extension-api/README.md).
+Its analyzer declares the `shellcheck` rule directly; the engine provider is `shellcheck-rs`.
 actionlint runs it in a fresh instance per document. Source reads use explicit read-only host grants;
 no native ShellCheck executable or network access is needed.
 
@@ -17,9 +16,15 @@ actionlint check
 ```
 
 The registry installation selects this plugin as the ShellCheck backend.
+Selection uses its exported `kjanat:actionlint/tool-integration@0.1.0` interface,
+not its package name. It negotiates the versioned
+[`shellcheck-config@0.1.0` profile](vendor/actionlint-extension-api/schemas/shellcheck-config-0.1.0.md),
+declining rc files, diagnostic ranges and `disable: [all]` so the host can select native execution.
 `--no-shellcheck` or `tools.shellcheck.enabled: false` disables ShellCheck analysis, including this plugin.
-Loading the artifact directly with `--plugin artifacts/plugin.wasm` creates a standalone analyzer instead,
-configured under `lint.rules.plugins.shellcheck-rs`; it receives no automatic filesystem grants.
+Loading the artifact with `--plugin artifacts/plugin.wasm` discovers the same
+tool-integration declaration and negotiates the same host tool configuration.
+Raw analyzer calls can supply plugin options directly; filesystem access still
+requires explicit caller-supplied grants.
 
 Each finding carries the ShellCheck code as `code`, the ShellCheck level as `severity`, the message in the form
 `shellcheck reported issue in this script: SC2086:info:1:6: ...` and, when ShellCheck offers one, a fix with edits
@@ -27,7 +32,8 @@ mapped into the workflow file. Findings in composite action scripts point at the
 Findings remain available when another script or the engine's dataflow analysis cannot complete;
 the host also receives an explicit incomplete-analysis error.
 
-The plugin selects the dialect the way actionlint's built-in rule does: the resolved runner shell, a
+The required `kjanat:actionlint/prepared-scripts@0.1.0` host import supplies the
+same preparation used by native ShellCheck: the resolved runner shell, a
 `# shellcheck shell=` directive at the top of the script, and the runner's startup options such as `set -e -o pipefail`
 for an explicit `bash`. Without a shell directive, steps whose shell is unknown, `pwsh`, `python` or a custom template
 that hides the script are skipped. `${{ }}` expressions are masked before analysis, and SC1091, SC2194, SC2050, SC2153,
@@ -63,8 +69,7 @@ The host passes a JSON object; every key is optional:
 | `extended-analysis` | Enable or disable dataflow analysis                                                                                       |
 | `severity`          | Lowest reported level: `error`, `warning`, `info` or `style`                                                              |
 | `external-sources`  | Follow sources within the read-only directories granted by the host; default false                                        |
-| `source-path`       | Source search directories in the guest filesystem                                                                         |
-| `source-roots`      | Host-to-guest path mappings supplied by the adapter; mappings do not grant file access                                    |
+| `source-path`       | Source search directories, translated through the granted filesystem roots                                               |
 
 Unknown keys and invalid values fail the analysis with a message naming the key.
 The rule exposes a generated options schema for editor/tool discovery, also packaged as `artifacts/schema.json`.
@@ -79,7 +84,11 @@ and can select directories outside the workspace. The host maps absolute source
 directives into those grants, records actual reads and keeps file snapshots for
 the duration of the call. Clean and transitively sourced files are dependencies
 even when they emit no findings. ShellCheck directives cannot expand the host's
-grants. Rc files still require the native adapter.
+grants. Mount translations come from `kjanat:actionlint/source-files@0.1.0`,
+never from plugin options. This import, `source-annotations` and `prepared-scripts` are required
+by the component. Rc files still require the native adapter.
+Plugin options can narrow these grants; they cannot enable disabled host access
+or add directories outside the workspace and host-configured source paths.
 
 With explicit filesystem grants, absolute source paths and absolute search
 directories work even without a known working directory. Relative paths still
@@ -90,6 +99,15 @@ its relative search candidates before falling back to an absolute source name.
 
 Requirements: the Rust toolchain in `rust-toolchain.toml` with the `wasm32-wasip2` target, which `rustup` installs
 on first use, and Go 1.27 for the host test.
+
+The public SDK is vendored under `vendor/actionlint-extension-api` while its new
+interfaces await publication. This snapshot is self-contained; builds need no
+sibling actionlint checkout. Keep its WIT, schemas and Rust bindings together
+when updating the snapshot.
+
+The host integration test module still pins the previous published host.
+These new interfaces were tested with a temporary module replacement against
+the matching host changes. Update that published host pin before CI or release.
 
 ```sh
 cargo build --locked --release --lib --target wasm32-wasip2

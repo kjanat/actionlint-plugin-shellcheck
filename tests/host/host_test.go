@@ -46,7 +46,7 @@ func analyze(t *testing.T, options string) []diagnostic.Diagnostic {
 	t.Helper()
 	ctx := context.Background()
 	component := load(t)
-	if name := component.Descriptor().Name; name != "shellcheck-rs" {
+	if name := component.Descriptor().Name; name != "shellcheck" {
 		t.Fatalf("plugin name %q", name)
 	}
 	registration := analyzer.Registration{Analyzer: component}
@@ -62,7 +62,7 @@ func analyze(t *testing.T, options string) []diagnostic.Diagnostic {
 	}
 	var findings []diagnostic.Diagnostic
 	for _, finding := range result.Diagnostics {
-		if finding.Rule == "shellcheck-rs" {
+		if finding.Rule == "shellcheck" {
 			findings = append(findings, finding)
 		}
 	}
@@ -163,6 +163,7 @@ func TestPluginValidatesOptionalCheckNames(t *testing.T) {
 
 type rawFixAnalyzer struct {
 	analyzer.Analyzer
+	analyzer.ToolIntegrator
 	inspected bool
 }
 
@@ -192,7 +193,8 @@ func (a *rawFixAnalyzer) Analyze(ctx context.Context, input analyzer.Input) ([]d
 // actual component findings before that policy runs and checks every raw fix.
 // Editors need those original revision keys to reject edits against changed files.
 func TestFixRevisionsUseDeclaringPathBeforePolicy(t *testing.T) {
-	checked := &rawFixAnalyzer{Analyzer: load(t)}
+	component := load(t)
+	checked := &rawFixAnalyzer{Analyzer: component, ToolIntegrator: component}
 	_, err := analysis.Analyze(t.Context(), analysis.Request{
 		Sources: []analysis.Source{{Path: "workflow.yml", Content: []byte(workflow)}},
 		Options: analysis.Options{Analyzers: []analyzer.Registration{{Analyzer: checked}}},

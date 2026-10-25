@@ -24,7 +24,7 @@ func directiveFindings(t *testing.T, component analyzer.Analyzer, source string)
 	}
 	var findings []diagnostic.Diagnostic
 	for _, finding := range result.Diagnostics {
-		if finding.Rule == "shellcheck-rs" {
+		if finding.Rule == "shellcheck" {
 			findings = append(findings, finding)
 		}
 	}
@@ -126,7 +126,7 @@ func TestYAMLDirectivesBelongToEachInvokedDocument(t *testing.T) {
 	}
 	var findings []diagnostic.Diagnostic
 	for _, finding := range result.Diagnostics {
-		if finding.Rule == "shellcheck-rs" {
+		if finding.Rule == "shellcheck" {
 			findings = append(findings, finding)
 		}
 	}

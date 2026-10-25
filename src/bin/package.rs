@@ -29,6 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             network: false,
             fixes: true,
             source_annotations: true,
+            source_files: true,
         },
         descriptor: &actionlint_plugin_shellcheck::descriptor(),
         license_text: include_str!("../../LICENSE"),

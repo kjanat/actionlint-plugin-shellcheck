@@ -17,10 +17,9 @@ path              = "src/bin/package.rs"
 required-features = ["package"]
 
 [dependencies]
-actionlint-extension-api = { git = "https://github.com/kjanat/actionlint", rev = "9a119d842458ddc03e2e64f171b8d544832afaa2", features = [
-  "source-annotations"
+actionlint-extension-api = { path = "vendor/actionlint-extension-api", features = [
+  "tool-integration"
 ] }
-regex                    = "1"
 serde                    = { version = "1", features = ["derive"] }
 serde_json               = "1"
 shellcheck-rs            = { git = "https://github.com/kjanat/shellcheck-rs", rev = "add3a224247289eef411a68bfd2d7b6d34d9284c" }
