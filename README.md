@@ -16,8 +16,8 @@ actionlint check
 ```
 
 The registry installation selects this plugin as the ShellCheck backend.
-Selection uses its exported `kjanat:actionlint/tool-integration@0.1.0` interface,
-not its package name. It negotiates the versioned
+Its exported `kjanat:actionlint/tool-integration@0.1.0` interface identifies the managed tool role.
+It negotiates the versioned
 [`shellcheck-config@0.1.0` profile](vendor/actionlint-extension-api/schemas/shellcheck-config-0.1.0.md),
 declining rc files, diagnostic ranges and `disable: [all]` so the host can select native execution.
 `--no-shellcheck` or `tools.shellcheck.enabled: false` disables ShellCheck analysis, including this plugin.
@@ -32,8 +32,8 @@ mapped into the workflow file. Findings in composite action scripts point at the
 Findings remain available when another script or the engine's dataflow analysis cannot complete;
 the host also receives an explicit incomplete-analysis error.
 
-The required `kjanat:actionlint/prepared-scripts@0.1.0` host import supplies the
-same preparation used by native ShellCheck: the resolved runner shell, a
+The required `kjanat:actionlint/prepared-scripts@0.1.0` host import supplies
+native ShellCheck's preparation: the resolved runner shell, a
 `# shellcheck shell=` directive at the top of the script, and the runner's startup options such as `set -e -o pipefail`
 for an explicit `bash`. Without a shell directive, steps whose shell is unknown, `pwsh`, `python` or a custom template
 that hides the script are skipped. `${{ }}` expressions are masked before analysis, and SC1091, SC2194, SC2050, SC2153,
@@ -52,7 +52,7 @@ ShellCheck directives attached as YAML comments apply to that script:
 ```
 
 The host supplies these comments through `kjanat:actionlint/source-annotations@0.1.0`, independently of script text.
-The artifact requires a host providing that optional interface. Directives inside block scalars keep normal ShellCheck
+The host must implement that interface. Directives inside block scalars keep normal ShellCheck
 scope; trailing directives inside shell text retain ShellCheck's placement error. Invalid YAML directives point at
 their comment. Script findings and fixes retain their original positions, including anchored scripts and invoked
 composite actions. Alias-use YAML directives apply only to that declaration.
@@ -71,7 +71,7 @@ The host passes a JSON object; every key is optional:
 | `external-sources`  | Follow sources within the read-only directories granted by the host; default false                                        |
 | `source-path`       | Source search directories, translated through the granted filesystem roots                                                |
 
-Unknown keys and invalid values fail the analysis with a message naming the key.
+Unknown keys and invalid values fail analysis; the error names the key.
 The rule exposes a generated options schema for editor/tool discovery, also packaged as `artifacts/schema.json`.
 An explicit dialect option does not turn an unknown or unsupported runtime shell into a shell script.
 `disable` identifies emitted diagnostics by number; `enable` selects optional analysis passes by name. Unknown
@@ -102,7 +102,8 @@ Requirements: the Rust toolchain in `rust-toolchain.toml` with the `wasm32-wasip
 on first use, and Go 1.27 for the host test.
 
 The public SDK is vendored under `vendor/actionlint-extension-api` from actionlint
-commit `a935cfc4711d346577afd9bfecb06b1cb3b58c2f`, also selected by the Go host tests.
+commit `ab094b9bfcc8d9f1b996035b1fed0f884aa7b42d`. The Go host tests select
+`a935cfc4711d346577afd9bfecb06b1cb3b58c2f`; the WIT interfaces match.
 The [snapshot manifest](vendor/actionlint-extension-api.snapshot.json) records its
 source identity. Builds need no sibling actionlint checkout or module replacement.
 Keep the SDK's WIT, schemas and Rust bindings together when updating the snapshot.
@@ -117,7 +118,7 @@ Distribute `artifacts/plugin.wasm`. The package also contains `metadata.json`, `
 repackaging the same input produces identical bytes. The declaration's contract checksum is SHA-256 of the
 SDK's canonical analyzer WIT with LF line endings, matching actionlint's contract identity. The runtime descriptor and
 static
-declaration share rule metadata. This is a component, not the core-Wasm script-engine ABI.
+declaration share rule metadata. The component uses the analyzer ABI.
 
 The SDK owns guest bindings, the component export macro and native packaging. This plugin supplies its
 descriptor, Cargo identity, engine, capabilities and license. Its `source-annotations` feature imports

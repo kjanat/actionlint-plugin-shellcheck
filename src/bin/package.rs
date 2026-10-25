@@ -13,6 +13,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
     Package {
         identity: Identity {
+            id: "shellcheck-rs",
             name: "ShellCheck",
             description: env!("CARGO_PKG_DESCRIPTION"),
             license: env!("CARGO_PKG_LICENSE"),

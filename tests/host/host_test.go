@@ -221,6 +221,7 @@ func TestPackagedDeclarationMatchesRuntime(t *testing.T) {
 		Requires []analyzer.Fact `json:"requires"`
 	}
 	var declaration struct {
+		ID         string                `json:"id"`
 		Descriptor *componentDeclaration `json:"descriptor"`
 	}
 	if err := json.Unmarshal(info.Metadata, &declaration); err != nil {
@@ -228,6 +229,9 @@ func TestPackagedDeclarationMatchesRuntime(t *testing.T) {
 	}
 	component := load(t)
 	descriptor := component.Descriptor()
+	if declaration.ID != "shellcheck-rs" || descriptor.Name != "shellcheck" {
+		t.Fatalf("package id %q, rule name %q", declaration.ID, descriptor.Name)
+	}
 	if !component.HasAnalyzer() || component.HasRunnerProvider() || declaration.Descriptor == nil {
 		t.Fatalf("unexpected component roles or descriptor: %+v", declaration.Descriptor)
 	}

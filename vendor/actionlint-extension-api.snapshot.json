@@ -1,8 +1,8 @@
 {
 	"repository": "https://github.com/kjanat/actionlint",
-	"revision": "a935cfc4711d346577afd9bfecb06b1cb3b58c2f",
+	"revision": "ab094b9bfcc8d9f1b996035b1fed0f884aa7b42d",
 	"path": "crates/actionlint-extension-api",
-	"tree": "fa40ca6161ab09862303754a01d6ac1d12177ef2",
+	"tree": "3cd30078e8c88baba9eef0fd60a435b462af7f04",
 	"files": [
 		{
 			"path": "CONTRIBUTING.md",
@@ -21,8 +21,8 @@
 		},
 		{
 			"path": "README.md",
-			"blob": "6902af159248d76206778bfaacc367d5e566f29e",
-			"sha256": "c2a332fcb22aa36b8effb3239199c693b19778499ae4c09aa2811c3194e86e06"
+			"blob": "c4376685ad3410ca70e3c69bddab9a4a7c066eeb",
+			"sha256": "767057ea0f41257d4cb7be49d7dfc6cf701dfc794f4d6c7fef723e74d06f9052"
 		},
 		{
 			"path": "build.rs",
@@ -51,8 +51,8 @@
 		},
 		{
 			"path": "src/package.rs",
-			"blob": "063178a56905d92d5674982d5f285785f95112c7",
-			"sha256": "f59a416a0d524d1bb15c3f1c2c55bbb522d75b025c4678199b9cc1a0cd332ae2"
+			"blob": "3583eaa2d6de9ebcfffccb377540a11ff237da1a",
+			"sha256": "84fe6a2ec6d3e5284d8df472763f30de88aabfc355a722c5e24ef2cfde97c978"
 		},
 		{
 			"path": "wit/analyzer.wit",

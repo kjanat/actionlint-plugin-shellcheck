@@ -45,6 +45,7 @@ func TestManagedSourceGrantsThroughCLI(t *testing.T) {
 		t.Fatal(err)
 	}
 	var metadata struct {
+		ID        string `json:"id"`
 		Version   string `json:"plugin_version"`
 		Interface string `json:"interface"`
 		Contract  string `json:"contract_sha256"`
@@ -59,7 +60,7 @@ func TestManagedSourceGrantsThroughCLI(t *testing.T) {
 		Plugins       []map[string]string `json:"plugins"`
 	}{1, []map[string]string{{
 		"registry": "https://plugins.actionlint.kjanat.dev/", "name": repository,
-		"repository_id": "1", "owner_id": "1", "plugin_id": "shellcheck",
+		"repository_id": "1", "owner_id": "1", "plugin_id": metadata.ID,
 		"selector": version, "version": version, "kind": "component", "asset": "plugin.wasm",
 		"url":    "https://" + repository + "/releases/download/" + version + "/plugin.wasm",
 		"sha256": info.SHA256, "contract": metadata.Interface + "#sha256=" + metadata.Contract,
