@@ -118,7 +118,7 @@ func TestYAMLDirectivesBelongToEachInvokedDocument(t *testing.T) {
 		}
 	}
 	result, err := analysis.Files(t.Context(), []string{filepath.Join(root, ".github", "workflows", "ci.yml")}, analysis.FileOptions{
-		Options:           analysis.Options{WorkingDir: root, Analyzers: []analyzer.Registration{{Analyzer: component}}},
+		WorkingDir: root, Analyzers: []analyzer.Registration{{Analyzer: component}},
 		SkipProjectConfig: true,
 	})
 	if err != nil {

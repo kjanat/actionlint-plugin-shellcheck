@@ -16,11 +16,8 @@ import (
 	"actionlint.kjanat.dev/v2/plugin"
 )
 
-// A working component API can still fail when the CLI constructs filesystem
-// grants, cache paths and source identities. This builds the real CLI, runs the
-// packaged Wasm against symlinked source directories, and checks its diagnostic.
-// It then attempts to overwrite a sourced input and checks that the CLI refuses
-// and leaves the file unchanged, including a symlink followed by a parent component.
+// Exercise workspace grants, escape rejection and source overwrite protection
+// through the real CLI and packaged component.
 func TestManagedSourceGrantsThroughCLI(t *testing.T) {
 	binary := filepath.Join(t.TempDir(), "actionlint")
 	if runtime.GOOS == "windows" {
@@ -75,7 +72,8 @@ func TestManagedSourceGrantsThroughCLI(t *testing.T) {
 		t.Fatal(err)
 	}
 	artifactCache := filepath.Join(cacheBase, "actionlint", "artifacts")
-	for _, directory := range []string{filepath.Join(root, ".git"), filepath.Join(outside, "sub"), artifactCache} {
+	inside := filepath.Join(root, "sources")
+	for _, directory := range []string{filepath.Join(root, ".git"), filepath.Join(inside, "sub"), filepath.Join(outside, "sub"), artifactCache} {
 		if err := os.MkdirAll(directory, 0o700); err != nil {
 			t.Fatal(err)
 		}
@@ -90,18 +88,34 @@ func TestManagedSourceGrantsThroughCLI(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(artifactCache, info.SHA256), artifactBytes, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	file := filepath.Join(outside, "values.sh")
-	if err := os.WriteFile(file, []byte("FLAGS='one two'\nSTABLE=one\n"), 0o600); err != nil {
-		t.Fatal(err)
+	const original = "FLAGS='one two'\nSTABLE=one\n"
+	file, outsideFile := filepath.Join(inside, "values.sh"), filepath.Join(outside, "values.sh")
+	for _, name := range []string{file, outsideFile} {
+		if err := os.WriteFile(name, []byte(original), 0o600); err != nil {
+			t.Fatal(err)
+		}
 	}
 	alias, link := filepath.Join(root, "shared"), filepath.Join(root, "link")
-	for name, target := range map[string]string{alias: outside, link: filepath.Join(outside, "sub")} {
+	escape, escapeLink := filepath.Join(root, "escape"), filepath.Join(root, "escape-link")
+	for name, target := range map[string]string{
+		alias: inside, link: filepath.Join(inside, "sub"),
+		escape: outside, escapeLink: filepath.Join(outside, "sub"),
+	} {
 		if err := os.Symlink(target, name); err != nil {
 			t.Fatal(err)
 		}
 	}
-	for _, grant := range []string{alias, link + string(os.PathSeparator) + ".."} {
-		t.Run(grant, func(t *testing.T) {
+	for _, tc := range []struct {
+		name, grant string
+		allowed     bool
+	}{
+		{"workspace-symlink", alias, true},
+		{"workspace-symlink-parent", link + string(os.PathSeparator) + "..", true},
+		{"outside-directory", outside, false},
+		{"outside-symlink", escape, false},
+		{"outside-symlink-parent", escapeLink + string(os.PathSeparator) + "..", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
 			configuration := filepath.Join(root, "actionlint.yaml")
 			settings := fmt.Sprintf(`plugins: [%s]
 tools:
@@ -110,7 +124,7 @@ tools:
     config:
       external-sources: true
       source-path: [%s]
-`, strconv.Quote(repository+"@"+version), strconv.Quote(grant))
+`, strconv.Quote(repository+"@"+version), strconv.Quote(tc.grant))
 			if err := os.WriteFile(configuration, []byte(settings), 0o600); err != nil {
 				t.Fatal(err)
 			}
@@ -125,7 +139,7 @@ jobs:
           echo $FLAGS
           echo $STABLE
         working-directory: shared
-`, strconv.Quote(filepath.ToSlash(grant)+"/values.sh"))
+`, strconv.Quote(filepath.ToSlash(tc.grant)+"/values.sh"))
 			if err := os.WriteFile(workflow, []byte(content), 0o600); err != nil {
 				t.Fatal(err)
 			}
@@ -134,15 +148,32 @@ jobs:
 			var stderr bytes.Buffer
 			command.Stderr = &stderr
 			output, err := command.Output()
-			if err == nil || command.ProcessState == nil || command.ProcessState.ExitCode() != 1 {
-				t.Fatalf("expected findings: %v\n%s\n%s", err, output, &stderr)
+			exitCode := 3
+			if tc.allowed {
+				exitCode = 1
+			}
+			if err == nil || command.ProcessState == nil || command.ProcessState.ExitCode() != exitCode {
+				t.Fatalf("expected exit %d: %v\n%s\n%s", exitCode, err, output, &stderr)
+			}
+			if !tc.allowed {
+				if len(output) != 0 {
+					t.Fatalf("failed analysis wrote findings to stdout: %s", output)
+				}
+				output = stderr.Bytes()
 			}
 			var result struct {
 				Completed   bool                    `json:"completed"`
 				Diagnostics []diagnostic.Diagnostic `json:"diagnostics"`
+				Error       string                  `json:"error"`
 			}
 			if err := json.Unmarshal(output, &result); err != nil {
 				t.Fatalf("decode host result: %v\n%s", err, output)
+			}
+			if !tc.allowed {
+				if result.Completed || len(result.Diagnostics) != 0 || !strings.Contains(result.Error, "outside workspace root") {
+					t.Fatalf("workspace escape not rejected: %+v", result)
+				}
+				return
 			}
 			if !result.Completed || len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "SC2086" {
 				t.Fatalf("source not analyzed: %+v", result)
@@ -154,9 +185,12 @@ jobs:
 				t.Fatalf("source overwrite not blocked: %v\n%s", err, output)
 			}
 			source, err := os.ReadFile(file)
-			if err != nil || string(source) != "FLAGS='one two'\nSTABLE=one\n" {
+			if err != nil || string(source) != original {
 				t.Fatalf("source changed: %q, %v", source, err)
 			}
 		})
+	}
+	if source, err := os.ReadFile(outsideFile); err != nil || string(source) != original {
+		t.Fatalf("outside source changed: %q, %v", source, err)
 	}
 }

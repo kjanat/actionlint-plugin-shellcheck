@@ -33,8 +33,7 @@ func TestToolIntegrationNegotiatesConfigurationAndGrants(t *testing.T) {
 	}
 	for _, config := range []string{`{"rc-file":".shellcheckrc"}`, `{"disable":["all"]}`, `{"disable":["SC2000-SC3000"]}`} {
 		_, err := component.NegotiateTool(t.Context(), json.RawMessage(config), nil)
-		var unsupported *analyzer.UnsupportedToolConfiguration
-		if !errors.As(err, &unsupported) {
+		if _, ok := errors.AsType[*analyzer.UnsupportedToolConfigurationError](err); !ok {
 			t.Fatalf("%s: expected negotiated refusal, got %v", config, err)
 		}
 	}

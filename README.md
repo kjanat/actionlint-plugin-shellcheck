@@ -69,7 +69,7 @@ The host passes a JSON object; every key is optional:
 | `extended-analysis` | Enable or disable dataflow analysis                                                                                       |
 | `severity`          | Lowest reported level: `error`, `warning`, `info` or `style`                                                              |
 | `external-sources`  | Follow sources within the read-only directories granted by the host; default false                                        |
-| `source-path`       | Source search directories, translated through the granted filesystem roots                                               |
+| `source-path`       | Source search directories, translated through the granted filesystem roots                                                |
 
 Unknown keys and invalid values fail the analysis with a message naming the key.
 The rule exposes a generated options schema for editor/tool discovery, also packaged as `artifacts/schema.json`.
@@ -80,7 +80,7 @@ shellcheck-rs's typed optional-check catalogue; no CLI output parsing or copied 
 
 For the managed plugin, `tools.shellcheck.config.external-sources: true` grants
 the workspace read-only. Explicit `source-path` directories also enable access
-and can select directories outside the workspace. The host maps absolute source
+and must remain within the workspace after symlink resolution. The host maps absolute source
 directives into those grants, records actual reads and keeps file snapshots for
 the duration of the call. Clean and transitively sourced files are dependencies
 even when they emit no findings. ShellCheck directives cannot expand the host's
@@ -88,7 +88,8 @@ grants. Mount translations come from `kjanat:actionlint/source-files@0.1.0`,
 never from plugin options. This import, `source-annotations` and `prepared-scripts` are required
 by the component. Rc files still require the native adapter.
 Plugin options can narrow these grants; they cannot enable disabled host access
-or add directories outside the workspace and host-configured source paths.
+or add directories outside the workspace. Direct paths and symlinks that escape
+the workspace fail analysis.
 
 With explicit filesystem grants, absolute source paths and absolute search
 directories work even without a known working directory. Relative paths still
@@ -100,14 +101,11 @@ its relative search candidates before falling back to an absolute source name.
 Requirements: the Rust toolchain in `rust-toolchain.toml` with the `wasm32-wasip2` target, which `rustup` installs
 on first use, and Go 1.27 for the host test.
 
-The public SDK is vendored under `vendor/actionlint-extension-api` while its new
-interfaces await publication. This snapshot is self-contained; builds need no
-sibling actionlint checkout. Keep its WIT, schemas and Rust bindings together
-when updating the snapshot.
-
-The host integration test module still pins the previous published host.
-These new interfaces were tested with a temporary module replacement against
-the matching host changes. Update that published host pin before CI or release.
+The public SDK is vendored under `vendor/actionlint-extension-api` from actionlint
+commit `a935cfc4711d346577afd9bfecb06b1cb3b58c2f`, also selected by the Go host tests.
+The [snapshot manifest](vendor/actionlint-extension-api.snapshot.json) records its
+source identity. Builds need no sibling actionlint checkout or module replacement.
+Keep the SDK's WIT, schemas and Rust bindings together when updating the snapshot.
 
 ```sh
 cargo build --locked --release --lib --target wasm32-wasip2
