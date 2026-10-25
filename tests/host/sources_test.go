@@ -1,6 +1,7 @@
 package host_test
 
 import (
+	"context"
 	"encoding/json"
 	"io/fs"
 	"slices"
@@ -10,6 +11,7 @@ import (
 
 	"actionlint.kjanat.dev/v2/analyzer"
 	"actionlint.kjanat.dev/v2/diagnostic"
+	"actionlint.kjanat.dev/v2/source"
 	"github.com/kjanat/wacogo/wasi/filesystem/preopens"
 )
 
@@ -27,13 +29,36 @@ func (s *sourceFiles) Open(name string) (fs.File, error) {
 }
 
 func sourceScript(text string) analyzer.Script {
-	script := analyzer.Script{Text: text, Path: "ci.yml", Start: diagnostic.Position{Line: 1, Column: 1}, Runtime: &analyzer.Runtime{Shell: "bash", ShellKnown: true, Directory: "/workspace", DirectoryKnown: true}}
+	script := analyzer.Script{Reference: source.Reference{Document: "ci.yml", Node: "run"}, Text: text, Path: "ci.yml", Start: diagnostic.Position{Line: 1, Column: 1}, Runtime: &analyzer.Runtime{Shell: "bash", ShellKnown: true, Directory: "/workspace", DirectoryKnown: true}}
 	for i, line := range strings.Split(text, "\n") {
 		script.Spans = append(script.Spans, analyzer.Span{Line: i + 1, Start: 1, End: len(line) + 1, Document: diagnostic.Position{Line: i + 1, Column: 1}})
 	}
 	return script
 }
 
+// These filesystem tests supply identity-mapped shell fixtures. Preparation
+// semantics are covered by the application/packaged-engine tests instead.
+func analyzeSources(t *testing.T, component analyzer.Analyzer, input analyzer.Input) ([]diagnostic.Diagnostic, error) {
+	t.Helper()
+	script := input.Scripts[0]
+	input.PrepareScript = func(_ context.Context, reference source.Reference, _ *string) (*analyzer.PreparedScript, error) {
+		if reference != script.Reference {
+			t.Fatalf("unexpected script reference: %v", reference)
+		}
+		dialect := "bash"
+		prepared := &analyzer.PreparedScript{Text: script.Text, Sanitized: script.Text, Dialect: &dialect, Shell: "bash", Excluded: []uint32{1091}}
+		for index := range strings.Split(script.Text, "\n") {
+			prepared.Lines = append(prepared.Lines, analyzer.PreparedLine{Kind: analyzer.PreparedScriptLine, Line: index + 1})
+		}
+		return prepared, nil
+	}
+	return component.Analyze(t.Context(), input)
+}
+
+// Dependency tracking needs source reads even when those files produce no
+// findings. This executes the Wasm with workspace and external mounts and records
+// the files it opens, including a nested source and an absolute host-path mapping.
+// Checking the reads catches an analyzer that appears clean only because it skipped them.
 func TestGrantedSourcesIncludeCleanNestedAndExternalFiles(t *testing.T) {
 	component := load(t)
 	files := &sourceFiles{FS: fstest.MapFS{
@@ -45,7 +70,8 @@ VALUE=clean
 	}}
 	external := &sourceFiles{FS: fstest.MapFS{"shared.sh": &fstest.MapFile{Data: []byte("SHARED=two\n")}}}
 	input := analyzer.Input{
-		Options: json.RawMessage(`{"external-sources":true,"source-path":["/sources/0"],"source-roots":[{"host":"/actual/repo","guest":"/workspace"}]}`),
+		Options:     json.RawMessage(`{"external-sources":true,"source-path":["/sources/0"]}`),
+		SourceRoots: []analyzer.SourceRoot{{Host: "/actual/repo", Guest: "/workspace"}},
 		Scripts: []analyzer.Script{sourceScript(`. shared.sh
 # shellcheck source=/actual/repo/lib/clean.sh
 . dynamic-name
@@ -56,7 +82,7 @@ printf '%s\n' "$VALUE" "$FLAGS" "$SHARED"
 			{Path: "/sources/0", FS: preopens.ImmutableFS{FS: external}},
 		},
 	}
-	findings, err := component.Analyze(t.Context(), input)
+	findings, err := analyzeSources(t, component, input)
 	if err != nil || len(findings) != 0 {
 		t.Fatalf("findings=%+v error=%v", findings, err)
 	}
@@ -70,6 +96,10 @@ printf '%s\n' "$VALUE" "$FLAGS" "$SHARED"
 	}
 }
 
+// Reusing a component must not reuse stale source contents from an earlier call.
+// This analyzes the same script twice while changing a sourced value from one
+// word to two. The resulting SC2086 warning must change with the source file,
+// checking that each call reads the supplied filesystem with its updated content.
 func TestSourceEditChangesSubsequentAnalysis(t *testing.T) {
 	component := load(t)
 	for _, tc := range []struct {
@@ -81,7 +111,7 @@ func TestSourceEditChangesSubsequentAnalysis(t *testing.T) {
 			Scripts: []analyzer.Script{sourceScript(". ./values.sh\necho $FLAGS\n")},
 			Files:   []analyzer.FileSystem{{Path: "/workspace", FS: preopens.ImmutableFS{FS: fstest.MapFS{"values.sh": &fstest.MapFile{Data: []byte(tc.content)}}}}},
 		}
-		findings, err := component.Analyze(t.Context(), input)
+		findings, err := analyzeSources(t, component, input)
 		if err != nil || len(findings) != tc.warnings {
 			t.Fatalf("source=%q findings=%+v error=%v", tc.content, findings, err)
 		}
@@ -91,9 +121,13 @@ func TestSourceEditChangesSubsequentAnalysis(t *testing.T) {
 	}
 }
 
+// A syntax error in a sourced file must lead users back to the workflow's source
+// invocation. This runs the component against a broken sourced script and checks
+// the SC1094 finding's workflow path, reference and position. Losing that mapping
+// would either hide the error or send the editor to an unrelated location.
 func TestSourcedParseFailureIsReportedAtInvocation(t *testing.T) {
 	component := load(t)
-	findings, err := component.Analyze(t.Context(), analyzer.Input{
+	findings, err := analyzeSources(t, component, analyzer.Input{
 		Options: json.RawMessage(`{"external-sources":true}`),
 		Scripts: []analyzer.Script{sourceScript(". ./broken.sh\nprintf 'ok\\n'\n")},
 		Files: []analyzer.FileSystem{{Path: "/workspace", FS: preopens.ImmutableFS{FS: fstest.MapFS{
@@ -114,6 +148,10 @@ func TestSourcedParseFailureIsReportedAtInvocation(t *testing.T) {
 	t.Fatalf("source parse failure lost: %+v", findings)
 }
 
+// An unknown working directory still allows absolute source paths, but gives no
+// safe base for relative ones. This records actual guest reads across absolute
+// paths, search directories, host mappings and absent runtime facts. It catches
+// both skipped readable sources and relative reads resolved against an invented base.
 func TestUnknownDirectoryUsesOnlyIndependentSourcePaths(t *testing.T) {
 	component := load(t)
 	for _, tc := range []struct {
@@ -122,7 +160,7 @@ func TestUnknownDirectoryUsesOnlyIndependentSourcePaths(t *testing.T) {
 	}{
 		{"absolute", ". /sources/0/values.sh\necho $FLAGS\n", `{"external-sources":true}`, false, true},
 		{"absolute search path", ". values.sh\necho $FLAGS\n", `{"external-sources":true,"source-path":["/sources/0"]}`, false, true},
-		{"mapped host path", ". /repo/values.sh\necho $FLAGS\n", `{"external-sources":true,"source-roots":[{"host":"/repo","guest":"/sources/0"}]}`, false, true},
+		{"mapped host path", ". /repo/values.sh\necho $FLAGS\n", `{"external-sources":true}`, false, true},
 		{"no runtime", ". /sources/0/values.sh\necho $FLAGS\n", `{"external-sources":true}`, true, true},
 		{"relative without base", ". values.sh\necho $FLAGS\n", `{"external-sources":true}`, false, false},
 	} {
@@ -134,9 +172,10 @@ func TestUnknownDirectoryUsesOnlyIndependentSourcePaths(t *testing.T) {
 			} else {
 				script.Runtime.DirectoryKnown = false
 			}
-			findings, err := component.Analyze(t.Context(), analyzer.Input{
+			findings, err := analyzeSources(t, component, analyzer.Input{
 				Options: json.RawMessage(tc.options), Scripts: []analyzer.Script{script},
-				Files: []analyzer.FileSystem{{Path: "/sources/0", FS: preopens.ImmutableFS{FS: files}}},
+				SourceRoots: []analyzer.SourceRoot{{Host: "/repo", Guest: "/sources/0"}},
+				Files:       []analyzer.FileSystem{{Path: "/sources/0", FS: preopens.ImmutableFS{FS: files}}},
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -148,6 +187,10 @@ func TestUnknownDirectoryUsesOnlyIndependentSourcePaths(t *testing.T) {
 	}
 }
 
+// ShellCheck searches relative candidates before an absolute source name, so two
+// readable files can give different analysis depending on lookup order. This
+// supplies conflicting source values and checks the resulting SC2086 warning,
+// then removes the relative candidate to check the absolute-path fallback.
 func TestAbsoluteSourceSearchOrderMatchesShellCheck(t *testing.T) {
 	component := load(t)
 	for _, shadow := range []bool{true, false} {
@@ -155,7 +198,7 @@ func TestAbsoluteSourceSearchOrderMatchesShellCheck(t *testing.T) {
 		if shadow {
 			workspace["sources/0/values.sh"] = &fstest.MapFile{Data: []byte("FLAGS='one two'\n")}
 		}
-		findings, err := component.Analyze(t.Context(), analyzer.Input{
+		findings, err := analyzeSources(t, component, analyzer.Input{
 			Options: json.RawMessage(`{"external-sources":true}`),
 			Scripts: []analyzer.Script{sourceScript(". /sources/0/values.sh\necho $FLAGS\n")},
 			Files: []analyzer.FileSystem{

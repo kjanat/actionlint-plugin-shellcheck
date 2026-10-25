@@ -1,4 +1,3 @@
-use crate::sources::SourceRoot;
 use serde::Deserialize;
 use shellcheck_rs::Severity;
 use shellcheck_rs::Shell;
@@ -13,7 +12,6 @@ struct Raw {
     severity: Option<String>,
     external_sources: bool,
     source_path: Vec<String>,
-    source_roots: Vec<SourceRoot>,
 }
 
 pub fn schema() -> serde_json::Value {
@@ -49,7 +47,6 @@ pub fn schema() -> serde_json::Value {
             },
             "external-sources": {"type": "boolean", "description": "Follow sources only within read-only filesystem grants supplied by the host."},
             "source-path": {"type": "array", "items": {"type": "string"}},
-            "source-roots": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["host", "guest"], "properties": {"host": {"type": "string"}, "guest": {"type": "string"}}}},
             "extended-analysis": {"type": "boolean"},
             "severity": {"type": "string", "enum": ["error", "warning", "info", "style"]}
         }
@@ -64,7 +61,6 @@ pub struct Options {
     pub severity: Severity,
     pub external_sources: bool,
     pub source_path: Vec<String>,
-    pub source_roots: Vec<SourceRoot>,
 }
 
 pub fn parse_shell(name: &str) -> Option<Shell> {
@@ -137,7 +133,6 @@ impl Options {
             severity,
             external_sources: raw.external_sources,
             source_path: raw.source_path,
-            source_roots: raw.source_roots,
         })
     }
 }
@@ -148,14 +143,26 @@ mod tests {
     use super::parse_code;
     use shellcheck_rs::Severity;
 
+    // A plugin installation without an options object must remain usable. The
+    // empty-string input takes a separate path from JSON deserialization, so this
+    // checks that it neither forces a dialect nor suppresses diagnostics and that
+    // the default severity includes style findings rather than silently hiding them.
     #[test]
     fn empty_options_are_defaults() {
         let options = Options::parse("").unwrap_or_else(|error| panic!("{error}"));
         assert!(options.shell.is_none());
         assert!(options.disable.is_empty());
+        assert!(options.enable.is_empty());
+        assert!(options.extended_analysis.is_none());
+        assert!(!options.external_sources);
+        assert!(options.source_path.is_empty());
         assert!(matches!(options.severity, Severity::StyleC));
     }
 
+    // Configuration mistakes should fail at the plugin boundary with the offending
+    // field identified, rather than silently changing analysis. This exercises
+    // conversions and malformed dialect, exclusion, optional-check and severity
+    // values, including numeric diagnostic exclusions versus named optional checks.
     #[test]
     fn options_are_validated() {
         let options = Options::parse(r#"{"shell": "dash", "disable": ["SC2086", "2034"], "enable": ["avoid-nullary-conditions"], "extended-analysis": false, "severity": "warning"}"#)
@@ -182,6 +189,10 @@ mod tests {
         assert_eq!(parse_code("SC"), None);
     }
 
+    // Editors use the published schema while the guest validates options at
+    // runtime; disagreement makes suggested settings unusable. This checks every
+    // engine-provided optional-check name in the generated schema and then submits
+    // that catalogue to the parser, covering their shared public configuration surface.
     #[test]
     fn schema_and_validation_use_the_engine_catalogue() {
         let schema = super::schema();

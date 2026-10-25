@@ -3,17 +3,25 @@
 version = 4
 
 [[package]]
-name = "actionlint-plugin-shellcheck"
-version = "0.1.1"
+name = "actionlint-extension-api"
+version = "0.1.0"
 dependencies = [
- "regex",
  "serde",
  "serde_json",
  "sha2",
- "shellcheck-rs",
  "wasm-encoder",
  "wasmparser",
  "wit-bindgen",
+]
+
+[[package]]
+name = "actionlint-plugin-shellcheck"
+version = "0.1.2"
+dependencies = [
+ "actionlint-extension-api",
+ "serde",
+ "serde_json",
+ "shellcheck-rs",
 ]
 
 [[package]]

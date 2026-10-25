@@ -16,6 +16,11 @@ import (
 	"actionlint.kjanat.dev/v2/plugin"
 )
 
+// A working component API can still fail when the CLI constructs filesystem
+// grants, cache paths and source identities. This builds the real CLI, runs the
+// packaged Wasm against symlinked source directories, and checks its diagnostic.
+// It then attempts to overwrite a sourced input and checks that the CLI refuses
+// and leaves the file unchanged, including a symlink followed by a parent component.
 func TestManagedSourceGrantsThroughCLI(t *testing.T) {
 	binary := filepath.Join(t.TempDir(), "actionlint")
 	if runtime.GOOS == "windows" {
@@ -57,7 +62,7 @@ func TestManagedSourceGrantsThroughCLI(t *testing.T) {
 		Plugins       []map[string]string `json:"plugins"`
 	}{1, []map[string]string{{
 		"registry": "https://plugins.actionlint.kjanat.dev/", "name": repository,
-		"repository_id": "1", "owner_id": "1", "plugin_id": "shellcheck-rs",
+		"repository_id": "1", "owner_id": "1", "plugin_id": "shellcheck",
 		"selector": version, "version": version, "kind": "component", "asset": "plugin.wasm",
 		"url":    "https://" + repository + "/releases/download/" + version + "/plugin.wasm",
 		"sha256": info.SHA256, "contract": metadata.Interface + "#sha256=" + metadata.Contract,
@@ -86,7 +91,7 @@ func TestManagedSourceGrantsThroughCLI(t *testing.T) {
 		t.Fatal(err)
 	}
 	file := filepath.Join(outside, "values.sh")
-	if err := os.WriteFile(file, []byte("FLAGS='one two'\n"), 0o600); err != nil {
+	if err := os.WriteFile(file, []byte("FLAGS='one two'\nSTABLE=one\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	alias, link := filepath.Join(root, "shared"), filepath.Join(root, "link")
@@ -118,6 +123,7 @@ jobs:
       - run: |
           . %s
           echo $FLAGS
+          echo $STABLE
         working-directory: shared
 `, strconv.Quote(filepath.ToSlash(grant)+"/values.sh"))
 			if err := os.WriteFile(workflow, []byte(content), 0o600); err != nil {
@@ -148,7 +154,7 @@ jobs:
 				t.Fatalf("source overwrite not blocked: %v\n%s", err, output)
 			}
 			source, err := os.ReadFile(file)
-			if err != nil || string(source) != "FLAGS='one two'\n" {
+			if err != nil || string(source) != "FLAGS='one two'\nSTABLE=one\n" {
 				t.Fatalf("source changed: %q, %v", source, err)
 			}
 		})
