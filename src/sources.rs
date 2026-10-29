@@ -2,8 +2,6 @@ use std::path::Component;
 use std::path::Path;
 use std::path::PathBuf;
 
-use serde::Deserialize;
-
 use exports::kjanat::actionlint::analyzer::Diagnostic;
 use exports::kjanat::actionlint::analyzer::Position;
 use shellcheck_rs::interface::PositionedComment;
@@ -20,19 +18,27 @@ pub struct Files {
     roots: Vec<SourceRoot>,
 }
 
-#[derive(Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct SourceRoot {
-    pub host: String,
-    pub guest: String,
+pub use crate::kjanat::actionlint::source_files::SourceRoot;
+
+/// Mount translation is a host capability, never a plugin configuration option.
+#[cfg(target_arch = "wasm32")]
+pub fn roots() -> Vec<SourceRoot> {
+    crate::kjanat::actionlint::source_files::roots()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn roots() -> Vec<SourceRoot> {
+    Vec::new()
 }
 
 impl Files {
     pub fn new(directory: Option<&str>, paths: &[String], roots: &[SourceRoot]) -> Self {
+        let mut roots = roots.to_vec();
+        roots.sort_by_key(|root| std::cmp::Reverse(root.host.len()));
         Self {
             directory: directory.map(PathBuf::from),
             paths: paths.to_vec(),
-            roots: roots.to_vec(),
+            roots,
         }
     }
 
@@ -177,8 +183,12 @@ mod tests {
     use super::Files;
     use super::SourceRoot;
 
+    // Source directives can name host paths while the guest sees mounted paths.
+    // This checks Unix and Windows prefix translation, component boundaries and
+    // preservation of parent components for filesystem resolution. A similarly
+    // named directory must not be rewritten into an unrelated configured mount.
     #[test]
-    fn host_paths_map_only_to_declared_roots() {
+    fn host_paths_translate_mount_prefixes_without_cleaning_parents() {
         let files = Files::new(
             Some("/workspace/sub"),
             &[],
@@ -191,10 +201,15 @@ mod tests {
                     host: "C:/shared".into(),
                     guest: "/sources/0".into(),
                 },
+                SourceRoot {
+                    host: "/repo/lib".into(),
+                    guest: "/sources/1".into(),
+                },
             ],
         );
         for (input, expected) in [
-            ("/repo/lib/../clean.sh", "/workspace/lib/../clean.sh"),
+            ("/repo/lib/../clean.sh", "/sources/1/../clean.sh"),
+            ("/repo/lib/clean.sh", "/sources/1/clean.sh"),
             (r"c:\shared\clean.sh", "/sources/0/clean.sh"),
             ("/workspace/./lib/../clean.sh", "/workspace/lib/../clean.sh"),
             ("../clean.sh", "/workspace/sub/../clean.sh"),

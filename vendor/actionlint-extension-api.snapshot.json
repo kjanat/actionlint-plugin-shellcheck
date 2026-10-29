@@ -1,0 +1,115 @@
+{
+	"repository": "https://github.com/kjanat/actionlint",
+	"revision": "8836017f3c5150fcd6eba7b4ae64658b2d5c53e1",
+	"path": "crates/actionlint-extension-api",
+	"tree": "6c80fc2ddd95633f37b53a1c3b43a6e689d43e2a",
+	"files": [
+		{
+			"path": "CONTRIBUTING.md",
+			"blob": "e230ba73edf2a5923bbefa77b65f8283e9b18158",
+			"sha256": "71b1bba8d3b52ef78ef7d7d6c82f96ca2f65ac18746f040e61f75eb8a0f4b341"
+		},
+		{
+			"path": "Cargo.toml",
+			"blob": "93f4d938b62bbb9510aa075d14328cfc1df35a1d",
+			"sha256": "4a250440f0e62ac9f373f6f184f6db348cde03c01febd13a7c718f079e13ff52"
+		},
+		{
+			"path": "LICENSE.txt",
+			"blob": "bd45857b45a9391b6e4d8103cd67f520b355fd6b",
+			"sha256": "6984e3a43fa8ee8a6ce8ca7fdad391e58dc847639a147d1ea77c5a2d81f3533f"
+		},
+		{
+			"path": "README.md",
+			"blob": "64ea166f7add25f2f0b349db71b9ebd9a15b3bab",
+			"sha256": "8aa271341d493cf6d56cd0da430d0b017cf36a7e5b992b7f03e231bba6ba6ea6"
+		},
+		{
+			"path": "build.rs",
+			"blob": "6d3b11dc16a77d2e4b34c73b81e9ab8a42e09c08",
+			"sha256": "e00b2704b32ad739045d4dbf394301e01bfa5b9c52695c97395e579d51d69c03"
+		},
+		{
+			"path": "schemas/shell-preparation-0.1.0.md",
+			"blob": "6eb51309628c7125f6d6b809b9fb48eb64aab8b3",
+			"sha256": "f28e6a10123e088dcd71d483465f88f989a8f3c4db7990240bb82020c0d8d3b2"
+		},
+		{
+			"path": "schemas/shell-preparation-0.2.0.md",
+			"blob": "1de6b86aeb4518f98be552d03af5b30a761e710f",
+			"sha256": "371dae0697f74e6b4447e3caa54d6b61ca0d8d88fcebb45d4049985033fed3a6"
+		},
+		{
+			"path": "schemas/shellcheck-config-0.1.0.json",
+			"blob": "9bea2bb26da5c7bd3138770b2014d70991d1b2ea",
+			"sha256": "5a373f64fd0b0aa731ccff6b4b15a8e3a8f141a2491027eab280e244cdc7d9d8"
+		},
+		{
+			"path": "schemas/shellcheck-config-0.1.0.md",
+			"blob": "173ae46f085f950735f2945a5f68386388a2f7e2",
+			"sha256": "e8cfb3a2985ac499079973c28e359524d677bc012fed98e30b0cf5f6e5d7023e"
+		},
+		{
+			"path": "src/lib.rs",
+			"blob": "2faa5e776fe06e9717d770238755fe60f72b778c",
+			"sha256": "5015f1755ff6f8aa773327397edb4ed4015ac033b6d753ae58171041b1a9594d"
+		},
+		{
+			"path": "src/package.rs",
+			"blob": "3583eaa2d6de9ebcfffccb377540a11ff237da1a",
+			"sha256": "84fe6a2ec6d3e5284d8df472763f30de88aabfc355a722c5e24ef2cfde97c978"
+		},
+		{
+			"path": "wit/analyzer.wit",
+			"blob": "fe61ab9ea5ceddf91438f9b5c3dc084b5e0ab188",
+			"sha256": "4f3bfad82ef81650110ceaad751d245484899425e65c74cda1d919ea30828073"
+		},
+		{
+			"path": "wit/core-json-abi.md",
+			"blob": "1ec03daa522016da7a0f5ccb99cde8ad811f9875",
+			"sha256": "78ad714fd4f6e221b19e9dcf15d3b00dfcfea933652b38c59bb94588bc71c598"
+		},
+		{
+			"path": "wit/prepared-scripts.wit",
+			"blob": "5bf7686811c15dd1c5a48411550bcdd20273a4ba",
+			"sha256": "0d7bd9afc8f18685c6afb834725bc3e7856e4971b8c69ea30e2a1f7ded37a3b3"
+		},
+		{
+			"path": "wit/runner.wit",
+			"blob": "f8563deda79bcf6721d5a5b0d93cce654af7b277",
+			"sha256": "e878dabfe378501abbeb932235e183ebfcfbd3b4446b5a67a39e07698d5c6953"
+		},
+		{
+			"path": "wit/script-engine.wit",
+			"blob": "c57412bbb795c4ca988a5be47115423596327c63",
+			"sha256": "c20d7e9e516166576fdf19bfd86e0843838179b12ad55350c33db8d04c2eaa9b"
+		},
+		{
+			"path": "wit/source-annotations.wit",
+			"blob": "9a7403f13070b7de96a350b6430fa0f15ad4d1c6",
+			"sha256": "d52556e695537a59b7e50fea4a3c6686fc95e2eae31dbe33f43648f4ce1d0269"
+		},
+		{
+			"path": "wit/source-files.wit",
+			"blob": "b06cc1fadacc38733be267459ffc07036b86ae20",
+			"sha256": "177b4c562fd0528460d33b88ab103584aeb9f2ed25f6c838be41469e755ad169",
+			"source_sha256": "f0a6643b2ad6718e976ba6d2a25e29f24f479a7389f69646aeac8cbffaa650b3"
+		},
+		{
+			"path": "wit/template-effects.wit",
+			"blob": "a6ca8255a0244600a5998b7892a2f7a42d3921a1",
+			"sha256": "90722c112a92ba8e098609c2bf11170892504477d5526f62ae7f3a4cdf270fba"
+		},
+		{
+			"path": "wit/tool-integration.wit",
+			"blob": "a6271fbb5882a545c9232f8ae4dbf410cbabfcf0",
+			"sha256": "08fd146bce1b1fcebccf01d2de1a785776bda122c8245befe21d0d901f8de9ea"
+		}
+	],
+	"normalizations": [
+		{
+			"path": "wit/source-files.wit",
+			"change": "Removed spaces from an empty line."
+		}
+	]
+}
