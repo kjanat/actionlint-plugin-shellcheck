@@ -7,17 +7,12 @@ pub struct Prepared {
 
 #[cfg(target_arch = "wasm32")]
 pub fn request(script: &Script, dialect: Option<&str>) -> Result<Option<Prepared>, String> {
-    let reference = &script.reference;
-    prepared_scripts::prepare(
-        &crate::kjanat::actionlint::source_annotations::SourceReference {
-            document: reference.document.clone(),
-            revision: reference.revision.clone(),
-            node: reference.node.clone(),
-            address: reference.address.clone(),
-        },
-        dialect,
-    )
-    .map(|prepared| prepared.map(|data| Prepared { data }))
+    let occurrence = script
+        .occurrence
+        .as_deref()
+        .ok_or("script occurrence missing")?;
+    prepared_scripts::prepare(occurrence, dialect)
+        .map(|prepared| prepared.map(|data| Prepared { data }))
 }
 
 #[cfg(not(target_arch = "wasm32"))]

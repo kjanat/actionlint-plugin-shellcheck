@@ -2,7 +2,7 @@
 
 ShellCheck for the `run:` steps actionlint analyzes, as a WebAssembly component built on
 [shellcheck-rs](https://github.com/kjanat/shellcheck-rs). The component implements
-`kjanat:actionlint/analyzer@0.1.0` through
+`kjanat:actionlint/analyzer@0.2.0` through
 [`actionlint-extension-api`](vendor/actionlint-extension-api/README.md).
 Its analyzer declares the `shellcheck` rule directly; the engine provider is `shellcheck-rs`.
 actionlint runs it in a fresh instance per document. Source reads use explicit read-only host grants;
@@ -16,7 +16,7 @@ actionlint check
 ```
 
 The registry installation selects this plugin as the ShellCheck backend.
-Its exported `kjanat:actionlint/tool-integration@0.1.0` interface identifies the managed tool role.
+Its exported `kjanat:actionlint/tool-integration@0.2.0` interface identifies the managed tool role.
 It negotiates the versioned
 [`shellcheck-config@0.1.0` profile](vendor/actionlint-extension-api/schemas/shellcheck-config-0.1.0.md),
 declining rc files, diagnostic ranges and `disable: [all]` so the host can select native execution.
@@ -32,7 +32,7 @@ mapped into the workflow file. Findings in composite action scripts point at the
 Findings remain available when another script or the engine's dataflow analysis cannot complete;
 the host also receives an explicit incomplete-analysis error.
 
-The required `kjanat:actionlint/prepared-scripts@0.1.0` host import supplies
+The required `kjanat:actionlint/prepared-scripts@0.2.0` host import supplies
 native ShellCheck's preparation: the resolved runner shell, a
 `# shellcheck shell=` directive at the top of the script, and the runner's startup options such as `set -e -o pipefail`
 for an explicit `bash`. Without a shell directive, steps whose shell is unknown, `pwsh`, `python` or a custom template
@@ -51,7 +51,7 @@ ShellCheck directives attached as YAML comments apply to that script:
     echo $HI
 ```
 
-The host supplies these comments through `kjanat:actionlint/source-annotations@0.1.0`, independently of script text.
+The host supplies these comments through `kjanat:actionlint/source-annotations@0.2.0`, independently of script text.
 The host must implement that interface. Directives inside block scalars keep normal ShellCheck
 scope; trailing directives inside shell text retain ShellCheck's placement error. Invalid YAML directives point at
 their comment. Script findings and fixes retain their original positions, including anchored scripts and invoked
@@ -84,7 +84,7 @@ and must remain within the workspace after symlink resolution. The host maps abs
 directives into those grants, records actual reads and keeps file snapshots for
 the duration of the call. Clean and transitively sourced files are dependencies
 even when they emit no findings. ShellCheck directives cannot expand the host's
-grants. Mount translations come from `kjanat:actionlint/source-files@0.1.0`,
+grants. Mount translations come from `kjanat:actionlint/source-files@0.2.0`,
 never from plugin options. This import, `source-annotations` and `prepared-scripts` are required
 by the component. Rc files still require the native adapter.
 Plugin options can narrow these grants; they cannot enable disabled host access
@@ -102,8 +102,8 @@ Requirements: the Rust toolchain in `rust-toolchain.toml` with the `wasm32-wasip
 on first use, and Go 1.27 for the host test.
 
 The public SDK is vendored under `vendor/actionlint-extension-api` from actionlint
-commit `ab094b9bfcc8d9f1b996035b1fed0f884aa7b42d`. The Go host tests select
-`a935cfc4711d346577afd9bfecb06b1cb3b58c2f`; the WIT interfaces match.
+commit `8836017f3c5150fcd6eba7b4ae64658b2d5c53e1`. The Go host tests select the
+same commit.
 The [snapshot manifest](vendor/actionlint-extension-api.snapshot.json) records its
 source identity. Builds need no sibling actionlint checkout or module replacement.
 Keep the SDK's WIT, schemas and Rust bindings together when updating the snapshot.

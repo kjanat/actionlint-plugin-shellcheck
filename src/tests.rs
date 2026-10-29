@@ -29,7 +29,7 @@ fn script(text: &str) -> Script {
             },
             document_end: None,
         }],
-        invocation: None,
+        occurrence: Some("a".repeat(64)),
         runtime: None,
     }
 }

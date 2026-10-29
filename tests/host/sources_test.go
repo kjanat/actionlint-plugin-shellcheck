@@ -28,8 +28,21 @@ func (s *sourceFiles) Open(name string) (fs.File, error) {
 	return f, err
 }
 
+// The fixtures run one workflow-owned script, registered in a single-entry
+// invocation graph so the host accepts its occurrence for shell preparation.
+var (
+	sourceEntry      = analyzer.OccurrenceID(strings.Repeat("a", 64))
+	sourceOccurrence = analyzer.OccurrenceID(strings.Repeat("b", 64))
+	sourceDocument   = source.Reference{Document: "ci.yml", Node: "document"}
+)
+
 func sourceScript(text string) analyzer.Script {
-	script := analyzer.Script{Reference: source.Reference{Document: "ci.yml", Node: "run"}, Text: text, Path: "ci.yml", Start: diagnostic.Position{Line: 1, Column: 1}, Runtime: &analyzer.Runtime{Shell: "bash", ShellKnown: true, Directory: "/workspace", DirectoryKnown: true}}
+	reference := source.Reference{Document: "ci.yml", Node: "run"}
+	script := analyzer.Script{
+		Reference: reference, Text: text, Path: "ci.yml", Start: diagnostic.Position{Line: 1, Column: 1},
+		Occurrence: analyzer.ScriptOccurrence{ID: sourceOccurrence, Owner: sourceEntry, Ancestry: []analyzer.OccurrenceID{sourceEntry}, Declaration: reference, Kind: analyzer.RunScript},
+		Runtime:    &analyzer.Runtime{Shell: "bash", ShellKnown: true, Directory: "/workspace", DirectoryKnown: true},
+	}
 	for i, line := range strings.Split(text, "\n") {
 		script.Spans = append(script.Spans, analyzer.Span{Line: i + 1, Start: 1, End: len(line) + 1, Document: diagnostic.Position{Line: i + 1, Column: 1}})
 	}
@@ -41,9 +54,20 @@ func sourceScript(text string) analyzer.Script {
 func analyzeSources(t *testing.T, component analyzer.Analyzer, input analyzer.Input) ([]diagnostic.Diagnostic, error) {
 	t.Helper()
 	script := input.Scripts[0]
-	input.PrepareScript = func(_ context.Context, reference source.Reference, _ *string) (*analyzer.PreparedScript, error) {
-		if reference != script.Reference {
-			t.Fatalf("unexpected script reference: %v", reference)
+	graph, err := analyzer.NewCallGraph(analyzer.CallGraphData{
+		Entry:    analyzer.InvocationEntry{ID: sourceEntry, Kind: analyzer.WorkflowEntry, Reference: sourceDocument},
+		Budget:   analyzer.InvocationBudget{MaxDepth: 1, MaxCalls: 1, MaxScripts: 1},
+		Scripts:  []analyzer.ScriptOccurrence{script.Occurrence},
+		Complete: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	input.Reference, input.CallGraph = sourceDocument, graph
+	input.Available = []analyzer.Fact{analyzer.Scripts, analyzer.Invocations, analyzer.Execution}
+	input.PrepareScript = func(_ context.Context, occurrence analyzer.OccurrenceID, _ *string) (*analyzer.PreparedScript, error) {
+		if occurrence != script.Occurrence.ID {
+			t.Fatalf("unexpected script occurrence: %v", occurrence)
 		}
 		dialect := "bash"
 		prepared := &analyzer.PreparedScript{Text: script.Text, Sanitized: script.Text, Dialect: &dialect, Shell: "bash", Excluded: []uint32{1091}}

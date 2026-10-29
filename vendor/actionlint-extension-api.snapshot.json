@@ -1,8 +1,8 @@
 {
 	"repository": "https://github.com/kjanat/actionlint",
-	"revision": "ab094b9bfcc8d9f1b996035b1fed0f884aa7b42d",
+	"revision": "8836017f3c5150fcd6eba7b4ae64658b2d5c53e1",
 	"path": "crates/actionlint-extension-api",
-	"tree": "3cd30078e8c88baba9eef0fd60a435b462af7f04",
+	"tree": "6c80fc2ddd95633f37b53a1c3b43a6e689d43e2a",
 	"files": [
 		{
 			"path": "CONTRIBUTING.md",
@@ -21,8 +21,8 @@
 		},
 		{
 			"path": "README.md",
-			"blob": "c4376685ad3410ca70e3c69bddab9a4a7c066eeb",
-			"sha256": "767057ea0f41257d4cb7be49d7dfc6cf701dfc794f4d6c7fef723e74d06f9052"
+			"blob": "64ea166f7add25f2f0b349db71b9ebd9a15b3bab",
+			"sha256": "8aa271341d493cf6d56cd0da430d0b017cf36a7e5b992b7f03e231bba6ba6ea6"
 		},
 		{
 			"path": "build.rs",
@@ -31,8 +31,13 @@
 		},
 		{
 			"path": "schemas/shell-preparation-0.1.0.md",
-			"blob": "3d1b643d50aa7668582ddb7085dc1db835d05466",
-			"sha256": "c98cfbbf6f8a0624abff1c9afcc23650521edbd3069a73fedd0c3c536dd5d7cd"
+			"blob": "6eb51309628c7125f6d6b809b9fb48eb64aab8b3",
+			"sha256": "f28e6a10123e088dcd71d483465f88f989a8f3c4db7990240bb82020c0d8d3b2"
+		},
+		{
+			"path": "schemas/shell-preparation-0.2.0.md",
+			"blob": "1de6b86aeb4518f98be552d03af5b30a761e710f",
+			"sha256": "371dae0697f74e6b4447e3caa54d6b61ca0d8d88fcebb45d4049985033fed3a6"
 		},
 		{
 			"path": "schemas/shellcheck-config-0.1.0.json",
@@ -41,13 +46,13 @@
 		},
 		{
 			"path": "schemas/shellcheck-config-0.1.0.md",
-			"blob": "ec4043b63a4078753eec48a6bfb292a45f019b5f",
-			"sha256": "233c5028f98a142bd0a6703a1bcfce4ca58b7c3c5c26403b9782d17464b0e782"
+			"blob": "173ae46f085f950735f2945a5f68386388a2f7e2",
+			"sha256": "e8cfb3a2985ac499079973c28e359524d677bc012fed98e30b0cf5f6e5d7023e"
 		},
 		{
 			"path": "src/lib.rs",
-			"blob": "2c38b2f3ef8b740aaa81140c4d69d7ac2ef4947f",
-			"sha256": "265ced49fa19e8f51bfe91397d85fe80ac8adc22b4e136bc77e45c5db9a916df"
+			"blob": "2faa5e776fe06e9717d770238755fe60f72b778c",
+			"sha256": "5015f1755ff6f8aa773327397edb4ed4015ac033b6d753ae58171041b1a9594d"
 		},
 		{
 			"path": "src/package.rs",
@@ -56,49 +61,49 @@
 		},
 		{
 			"path": "wit/analyzer.wit",
-			"blob": "4e6e7db039357282b5f40480c94cde718f120908",
-			"sha256": "7ce5cd5b7c62542d8b3b9860cdc5b1fa050ee50a87d068765b5050261861dfa7"
+			"blob": "fe61ab9ea5ceddf91438f9b5c3dc084b5e0ab188",
+			"sha256": "4f3bfad82ef81650110ceaad751d245484899425e65c74cda1d919ea30828073"
 		},
 		{
 			"path": "wit/core-json-abi.md",
-			"blob": "7aaa62c2a7bfe0464474c59ba030243edb4a96bf",
-			"sha256": "38daffb94838e7f22ad963b6dc418b87df8c6639323a6b01d4e8bc351da04516"
+			"blob": "1ec03daa522016da7a0f5ccb99cde8ad811f9875",
+			"sha256": "78ad714fd4f6e221b19e9dcf15d3b00dfcfea933652b38c59bb94588bc71c598"
 		},
 		{
 			"path": "wit/prepared-scripts.wit",
-			"blob": "bdccbcd0dcbfa403dae22634aa3ea7cda0b057a4",
-			"sha256": "82e5cf80788084b419616f67eb4efa8b0ba254f2de13130cc955cc3279659c3a"
+			"blob": "5bf7686811c15dd1c5a48411550bcdd20273a4ba",
+			"sha256": "0d7bd9afc8f18685c6afb834725bc3e7856e4971b8c69ea30e2a1f7ded37a3b3"
 		},
 		{
 			"path": "wit/runner.wit",
-			"blob": "465d656f553f04f13ac2ab2df43c00b7ae6efbab",
-			"sha256": "4d8a53c83af4cc69656c9cbd1fc09b7e9bc79aaeaba6db5a0e5b9998290cb0bf"
+			"blob": "f8563deda79bcf6721d5a5b0d93cce654af7b277",
+			"sha256": "e878dabfe378501abbeb932235e183ebfcfbd3b4446b5a67a39e07698d5c6953"
 		},
 		{
 			"path": "wit/script-engine.wit",
-			"blob": "8edac19e4a64361c90c575811b1ae4c472fc44c1",
-			"sha256": "cb0d4c86f1c4e9e8029368b8686f5da542d8e6e542483aa6dbce2510a35eba86"
+			"blob": "c57412bbb795c4ca988a5be47115423596327c63",
+			"sha256": "c20d7e9e516166576fdf19bfd86e0843838179b12ad55350c33db8d04c2eaa9b"
 		},
 		{
 			"path": "wit/source-annotations.wit",
-			"blob": "a455b3f6f0e76c3e2c2d00618fe47c7b5958cdc6",
-			"sha256": "601960348049ccb617820b2afab8728eb207f0f71f1810cbd1c3a873f53b00c8"
+			"blob": "9a7403f13070b7de96a350b6430fa0f15ad4d1c6",
+			"sha256": "d52556e695537a59b7e50fea4a3c6686fc95e2eae31dbe33f43648f4ce1d0269"
 		},
 		{
 			"path": "wit/source-files.wit",
-			"blob": "039a2b540dad0c97dc722f10be67989c0d75667a",
-			"sha256": "01ac1f5a9d780877925b656d2d626618da7606b954f567df3fb995b96196f07f",
-			"source_sha256": "e90126e4c1d263189c395b5c55109e4bef908d725023ea7e6bea9e5ee3d6842b"
+			"blob": "b06cc1fadacc38733be267459ffc07036b86ae20",
+			"sha256": "177b4c562fd0528460d33b88ab103584aeb9f2ed25f6c838be41469e755ad169",
+			"source_sha256": "f0a6643b2ad6718e976ba6d2a25e29f24f479a7389f69646aeac8cbffaa650b3"
 		},
 		{
 			"path": "wit/template-effects.wit",
-			"blob": "fa2a3221f6fd090617e83bcf6bf0714125bdeee7",
-			"sha256": "2589cea2b7cb765c814a0347cab3da6ad1b6614d20ac2f5d1dc2acdd4ebf12f4"
+			"blob": "a6ca8255a0244600a5998b7892a2f7a42d3921a1",
+			"sha256": "90722c112a92ba8e098609c2bf11170892504477d5526f62ae7f3a4cdf270fba"
 		},
 		{
 			"path": "wit/tool-integration.wit",
-			"blob": "a9e31d8cf615a6b11f5f4325039c7fb90352f40f",
-			"sha256": "1b1d2378454a3d8e48a0519ca0d06172c61133f39f0774d76fd9a6c85cfc8b2b"
+			"blob": "a6271fbb5882a545c9232f8ae4dbf410cbabfcf0",
+			"sha256": "08fd146bce1b1fcebccf01d2de1a785776bda122c8245befe21d0d901f8de9ea"
 		}
 	],
 	"normalizations": [

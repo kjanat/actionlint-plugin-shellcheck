@@ -5,8 +5,8 @@ go 1.27.0
 toolchain go1.27.3
 
 require (
-	actionlint.kjanat.dev/v2 v2.0.0-20261025145625-a935cfc4711d
-	github.com/kjanat/wacogo v0.1.1
+	actionlint.kjanat.dev/v2 v2.0.0-20261029145538-8836017f3c51
+	github.com/kjanat/wacogo v0.1.2-0.20261029103812-8a2a9ec1f52a
 )
 
 require (
@@ -14,6 +14,8 @@ require (
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/kjanat/go-yaml/v4 v4.0.0-rc.6.0.20261027160845-bf5e3e7bc566 // indirect
+	github.com/kjanat/wazero v1.11.1-0.20261025184245-2dce1ead9408 // indirect
 	github.com/mattn/go-colorable v0.1.16 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mattn/go-runewidth v0.0.31 // indirect
@@ -23,8 +25,6 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/tetratelabs/wazero v1.11.1-0.20260418165552-5cb4bb3ec0c1 // indirect
-	go.yaml.in/yaml/v4 v4.0.0-rc.6 // indirect
 	golang.org/x/mod v0.42.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
