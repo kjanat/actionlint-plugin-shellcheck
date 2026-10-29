@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0] - 2026-10-29
+
+### Changed
+
+- **Breaking:** implement `kjanat:actionlint/analyzer@0.2.0` for actionlint v2 hosts; hosts supporting only `0.1.0` reject this release.
+- Request shell preparation by script occurrence instead of source reference, matching the `0.2.0` `prepared-scripts` import.
+
 ## [0.1.2] - 2026-10-24
 
 ### Added
@@ -19,6 +26,7 @@
 
 *First release.*
 
+[0.2.0]: https://github.com/kjanat/actionlint-plugin-shellcheck/releases/tag/v0.2.0
 [0.1.2]: https://github.com/kjanat/actionlint-plugin-shellcheck/releases/tag/v0.1.2
 [0.1.1]: https://github.com/kjanat/actionlint-plugin-shellcheck/releases/tag/v0.1.1
 [0.1.0]: https://github.com/kjanat/actionlint-plugin-shellcheck/releases/tag/v0.1.0
