@@ -1,6 +1,8 @@
 use super::*;
-use exports::kjanat::actionlint::analyzer::{SourceReference, Span};
-use kjanat::actionlint::prepared_scripts::{Line, Prepared};
+use exports::kjanat::actionlint::analyzer::SourceReference;
+use exports::kjanat::actionlint::analyzer::Span;
+use kjanat::actionlint::prepared_scripts::Line;
+use kjanat::actionlint::prepared_scripts::Prepared;
 
 fn script(text: &str) -> Script {
     Script {
@@ -63,6 +65,11 @@ fn host_preparation_maps_actual_engine_findings_and_fixes() {
     assert_eq!(outcome.diagnostics.len(), 1);
     let finding = &outcome.diagnostics[0];
     assert_eq!(finding.code, "SC2086");
+    assert_eq!(finding.severity, "info");
+    assert_eq!(
+        finding.message,
+        "Double quote to prevent globbing and word splitting"
+    );
     assert_eq!((finding.start.line, finding.start.column), (7, 19));
     assert_eq!((finding.end.line, finding.end.column), (7, 21));
     assert_eq!(

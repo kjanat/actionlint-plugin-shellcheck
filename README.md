@@ -26,8 +26,8 @@ tool-integration declaration and negotiates the same host tool configuration.
 Raw analyzer calls can supply plugin options directly; filesystem access still
 requires explicit caller-supplied grants.
 
-Each finding carries the ShellCheck code as `code`, the ShellCheck level as `severity`, the message in the form
-`shellcheck reported issue in this script: SC2086:info:1:6: ...` and, when ShellCheck offers one, a fix with edits
+Each finding carries the ShellCheck code as `code`, the ShellCheck level as `severity`, the plain ShellCheck message
+and, when ShellCheck offers one, a fix with edits
 mapped into the workflow file. Findings in composite action scripts point at the action file.
 Findings remain available when another script or the engine's dataflow analysis cannot complete;
 the host also receives an explicit incomplete-analysis error.

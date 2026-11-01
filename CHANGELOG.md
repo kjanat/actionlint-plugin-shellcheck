@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.1] - 2026-11-02
+
+### Fixed
+
+- Emit plain ShellCheck messages; code, severity and location remain separate diagnostic fields.
+
 ## [0.2.0] - 2026-10-29
 
 ### Changed

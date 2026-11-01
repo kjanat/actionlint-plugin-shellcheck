@@ -85,6 +85,7 @@ export async function verify({
 	const diagnostic = object(result.diagnostics[0]);
 	assert.equal(diagnostic.rule, 'shellcheck');
 	assert.equal(diagnostic.code, 'SC2086');
+	assert.equal(diagnostic.message, 'Double quote to prevent globbing and word splitting');
 	assert.deepEqual(diagnostic.start, { line: 8, column: 16 });
 	assert.deepEqual(diagnostic.end, { line: 8, column: 22 });
 	const path = join(directory, 'scripts', 'values.sh');

@@ -230,7 +230,6 @@ fn map_result(
             .comment_position(comment.end.line, end_column)
             .or_else(|| position(script, end_line, end_column, true))
             .unwrap_or(start);
-        let line = if attached.is_some() { start.line } else { line };
         findings.push(Diagnostic {
             reference: Some(script.reference.clone()),
             explanation: String::new(),
@@ -243,10 +242,7 @@ fn map_result(
             rule: String::new(),
             code: format!("SC{}", comment.comment.code),
             severity: level.to_string(),
-            message: format!(
-                "shellcheck reported issue in this script: SC{}:{level}:{line}:{column}: {message}",
-                comment.comment.code
-            ),
+            message: message.to_string(),
             path: script.path.clone(),
             start,
             end,
