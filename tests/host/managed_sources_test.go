@@ -12,8 +12,9 @@ import (
 	"strings"
 	"testing"
 
-	"actionlint.kjanat.dev/v2/diagnostic"
-	"actionlint.kjanat.dev/v2/plugin"
+	pluginartifact "actionlint.kjanat.dev/v2/internal/plugins/artifacts"
+
+	"actionlint.kjanat.dev/v2/internal/results"
 )
 
 // Exercise workspace grants, escape rejection and source overwrite protection
@@ -40,7 +41,7 @@ func TestManagedSourceGrantsThroughCLI(t *testing.T) {
 		t.Setenv(name, "http://127.0.0.1:1")
 	}
 	t.Setenv("NO_PROXY", "")
-	info, err := plugin.Inspect(t.Context(), artifact, plugin.ArtifactOptions{})
+	inspected, err := pluginartifact.Resolve(t.Context(), artifact, pluginartifact.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +51,7 @@ func TestManagedSourceGrantsThroughCLI(t *testing.T) {
 		Interface string `json:"interface"`
 		Contract  string `json:"contract_sha256"`
 	}
-	if err := json.Unmarshal(info.Metadata, &metadata); err != nil {
+	if err := json.Unmarshal(inspected.Info.Metadata, &metadata); err != nil {
 		t.Fatal(err)
 	}
 	version := "v" + metadata.Version
@@ -63,7 +64,7 @@ func TestManagedSourceGrantsThroughCLI(t *testing.T) {
 		"repository_id": "1", "owner_id": "1", "plugin_id": metadata.ID,
 		"selector": version, "version": version, "kind": "component", "asset": "plugin.wasm",
 		"url":    "https://" + repository + "/releases/download/" + version + "/plugin.wasm",
-		"sha256": info.SHA256, "contract": metadata.Interface + "#sha256=" + metadata.Contract,
+		"sha256": inspected.Info.SHA256, "contract": metadata.Interface + "#sha256=" + metadata.Contract,
 	}}})
 	if err != nil {
 		t.Fatal(err)
@@ -86,7 +87,7 @@ func TestManagedSourceGrantsThroughCLI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(artifactCache, info.SHA256), artifactBytes, 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(artifactCache, inspected.Info.SHA256), artifactBytes, 0o600); err != nil {
 		t.Fatal(err)
 	}
 	const original = "FLAGS='one two'\nSTABLE=one\n"
@@ -144,7 +145,7 @@ jobs:
 			if err := os.WriteFile(workflow, []byte(content), 0o600); err != nil {
 				t.Fatal(err)
 			}
-			command := exec.CommandContext(t.Context(), binary, "check", "--json", "--no-ruff", "--config", configuration, workflow)
+			command := exec.CommandContext(t.Context(), binary, "check", "--json", "--no-tool", "ruff", "--config", configuration, workflow)
 			command.Dir = root
 			var stderr bytes.Buffer
 			command.Stderr = &stderr
@@ -163,9 +164,9 @@ jobs:
 				output = stderr.Bytes()
 			}
 			var result struct {
-				Completed   bool                    `json:"completed"`
-				Diagnostics []diagnostic.Diagnostic `json:"diagnostics"`
-				Error       string                  `json:"error"`
+				Completed   bool                 `json:"completed"`
+				Diagnostics []results.Diagnostic `json:"diagnostics"`
+				Error       string               `json:"error"`
 			}
 			if err := json.Unmarshal(output, &result); err != nil {
 				t.Fatalf("decode host result: %v\n%s", err, output)
@@ -179,7 +180,7 @@ jobs:
 			if !result.Completed || len(result.Diagnostics) != 1 || result.Diagnostics[0].Code != "SC2086" {
 				t.Fatalf("source not analyzed: %+v", result)
 			}
-			protect := exec.CommandContext(t.Context(), binary, "check", "--no-ruff", "--config", configuration, "--output-file", file, "--yes", workflow)
+			protect := exec.CommandContext(t.Context(), binary, "check", "--no-tool", "ruff", "--config", configuration, "--output-file", file, "--yes", workflow)
 			protect.Dir = root
 			output, err = protect.CombinedOutput()
 			if err == nil || protect.ProcessState == nil || protect.ProcessState.ExitCode() != 3 || !strings.Contains(string(output), "also an input") {

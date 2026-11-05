@@ -2,5 +2,25 @@
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
 	"extends": [
 		"config:recommended"
+	],
+	"ignorePaths": [
+		"vendor/**"
+	],
+	"postUpdateOptions": [
+		"gomodTidy"
+	],
+	"lockFileMaintenance": {
+		"enabled": true
+	},
+	"packageRules": [
+		{
+			"description": "Update the actionlint host and registry integration in one pull request.",
+			"matchPackageNames": [
+				"actionlint.kjanat.dev/v2",
+				"kjanat/actionlint",
+				"kjanat/actionlint-registry"
+			],
+			"groupName": "actionlint integration"
+		}
 	]
 }

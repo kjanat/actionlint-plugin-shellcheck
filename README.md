@@ -18,7 +18,7 @@ actionlint check
 The registry installation selects this plugin as the ShellCheck backend.
 Its exported `kjanat:actionlint/tool-integration@0.2.0` interface identifies the managed tool role.
 It negotiates the versioned
-[`shellcheck-config@0.1.0` profile](vendor/actionlint-extension-api/schemas/shellcheck-config-0.1.0.md),
+[`shellcheck-config@0.1.0` profile](vendor/actionlint-extension-api/json/shellcheck-config-0.1.0.md),
 declining rc files, diagnostic ranges and `disable: [all]` so the host can select native execution.
 `--no-shellcheck` or `tools.shellcheck.enabled: false` disables ShellCheck analysis, including this plugin.
 Loading the artifact with `--plugin artifacts/plugin.wasm` discovers the same
@@ -26,8 +26,8 @@ tool-integration declaration and negotiates the same host tool configuration.
 Raw analyzer calls can supply plugin options directly; filesystem access still
 requires explicit caller-supplied grants.
 
-Each finding carries the ShellCheck code as `code`, the ShellCheck level as `severity`, the message in the form
-`shellcheck reported issue in this script: SC2086:info:1:6: ...` and, when ShellCheck offers one, a fix with edits
+Each finding carries the ShellCheck code as `code`, the ShellCheck level as `severity`, the plain ShellCheck message
+and, when ShellCheck offers one, a fix with edits
 mapped into the workflow file. Findings in composite action scripts point at the action file.
 Findings remain available when another script or the engine's dataflow analysis cannot complete;
 the host also receives an explicit incomplete-analysis error.
@@ -101,12 +101,10 @@ its relative search candidates before falling back to an absolute source name.
 Requirements: the Rust toolchain in `rust-toolchain.toml` with the `wasm32-wasip2` target, which `rustup` installs
 on first use, and Go 1.27 for the host test.
 
-The public SDK is vendored under `vendor/actionlint-extension-api` from actionlint
-commit `8836017f3c5150fcd6eba7b4ae64658b2d5c53e1`. The Go host tests select the
-same commit.
-The [snapshot manifest](vendor/actionlint-extension-api.snapshot.json) records its
-source identity. Builds need no sibling actionlint checkout or module replacement.
-Keep the SDK's WIT, schemas and Rust bindings together when updating the snapshot.
+The vendored SDK and Go host tests use actionlint commit `99a250b29aaadfdb2d95a0c6ab954d3f9f11bdc8`.
+The SDK has no local changes. The [snapshot manifest](vendor/actionlint-extension-api.snapshot.json) records
+its source revision and file hashes. Builds need no sibling actionlint checkout or module replacement.
+Update the SDK's WIT, JSON profiles and Rust bindings together with the Go host dependency.
 
 ```sh
 cargo build --locked --release --lib --target wasm32-wasip2
@@ -163,8 +161,10 @@ go -C tests/host test -mod=readonly ./...
 ```
 
 Build and package before running the Go tests. They inspect the packaged metadata without executing it, then load
-the same component through actionlint's public `plugin` package, checking positions, fixes, option errors, descriptor
+the same component through actionlint's private host packages, checking positions, fixes, option errors, descriptor
 parity and package checksums. `ACTIONLINT_PLUGIN_SHELLCHECK` selects another packaged component with its sidecars.
+The unpublished host-test module uses the actionlint module prefix to access those private packages and pins
+the published host revision. The distributed component depends on the guest contract, not the host's Go API.
 Native tests also cover partial dataflow/startup failures without discarding other findings.
 
 The `candidate-verification` CI artifact contains the receipt for the package built by that run.

@@ -7,20 +7,11 @@ use std::path::Path;
 
 use serde::Serialize;
 use serde_json::json;
-use sha2::Digest;
-use sha2::Sha256;
-use wasm_encoder::Component;
-use wasm_encoder::CustomSection;
-use wasm_encoder::RawSection;
-use wasmparser::Encoding;
-use wasmparser::Parser;
-use wasmparser::Payload;
-use wasmparser::Validator;
+use sha2::{Digest, Sha256};
+use wasm_encoder::{Component, CustomSection, RawSection};
+use wasmparser::{Encoding, Parser, Payload, Validator};
 
-use crate::ANALYZER_CONTRACT_SHA256;
-use crate::ANALYZER_INTERFACE;
-use crate::Descriptor;
-use crate::Fact;
+use crate::{ANALYZER_CONTRACT_SHA256, ANALYZER_INTERFACE, Descriptor, InputKind};
 
 /// Discovery section read by actionlint without starting a guest.
 pub const METADATA_SECTION: &str = "actionlint.plugin";
@@ -96,16 +87,16 @@ impl Package<'_> {
             );
         }
         let rule = self.descriptor;
-        let requires: Vec<_> = rule
-            .requires
+        let required_inputs: Vec<_> = rule
+            .required_inputs
             .iter()
-            .map(|fact| match fact {
-                Fact::Source => "source",
-                Fact::Scripts => "scripts",
-                Fact::Mappings => "mappings",
-                Fact::Invocations => "invocations",
-                Fact::Execution => "execution",
-                Fact::Dependencies => "dependencies",
+            .map(|input_kind| match input_kind {
+                InputKind::Source => "source",
+                InputKind::Scripts => "scripts",
+                InputKind::Mappings => "mappings",
+                InputKind::Invocations => "invocations",
+                InputKind::Execution => "execution",
+                InputKind::Dependencies => "dependencies",
             })
             .collect();
         let examples: Vec<_> = rule
@@ -130,8 +121,7 @@ impl Package<'_> {
             "explanation": rule.explanation,
             "help": rule.help,
             "documentation_url": rule.documentation_url,
-            "fix_availability": rule.fix_availability,
-            "requires": requires,
+            "required_inputs": required_inputs,
         });
         if let Some(schema) = options_schema(&rule.options_schema)? {
             descriptor["options_schema"] = schema;
@@ -226,10 +216,8 @@ pub fn with_metadata(input: &[u8], metadata: &[u8]) -> Result<Vec<u8>> {
 mod tests {
     use super::*;
     use std::path::PathBuf;
-    use std::time::SystemTime;
-    use std::time::UNIX_EPOCH;
-    use wasm_encoder::Module;
-    use wasm_encoder::ModuleSection;
+    use std::time::{SystemTime, UNIX_EPOCH};
+    use wasm_encoder::{Module, ModuleSection};
 
     struct TestDirectory(PathBuf);
 
@@ -259,16 +247,16 @@ mod tests {
             description: String::new(),
             category: "correctness".into(),
             subcategory: String::new(),
-            maturity: "experimental".into(),
+            maturity: "nursery".into(),
             provider: "example".into(),
             recommended: false,
             explanation: String::new(),
             help: String::new(),
             documentation_url: String::new(),
-            fix_availability: "none".into(),
+            fix_availability: String::new(), // Legacy ABI field; ignored by the host.
             options_schema: options_schema.into(),
             examples: Vec::new(),
-            requires: Vec::new(),
+            required_inputs: Vec::new(),
         }
     }
 
@@ -301,12 +289,19 @@ mod tests {
 
     #[test]
     fn package_identity_is_independent_of_rule_and_display_names() -> Result<()> {
-        let descriptor = descriptor("");
+        let mut descriptor = descriptor("");
+        descriptor.required_inputs = vec![InputKind::Source, InputKind::Dependencies];
         let metadata: serde_json::Value =
             serde_json::from_slice(&package(&descriptor).metadata()?)?;
+        assert_eq!(
+            metadata["descriptor"]["required_inputs"],
+            serde_json::json!(["source", "dependencies"])
+        );
+        assert!(metadata["descriptor"].get("requires").is_none());
         assert_eq!(metadata["id"], "example-package");
         assert_eq!(metadata["name"], "Example");
         assert_eq!(metadata["descriptor"]["name"], descriptor.name);
+        assert!(metadata["descriptor"].get("fix_availability").is_none());
         assert_ne!(metadata["id"], metadata["descriptor"]["name"]);
         Ok(())
     }

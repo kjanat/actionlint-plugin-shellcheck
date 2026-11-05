@@ -65,6 +65,11 @@ fn host_preparation_maps_actual_engine_findings_and_fixes() {
     assert_eq!(outcome.diagnostics.len(), 1);
     let finding = &outcome.diagnostics[0];
     assert_eq!(finding.code, "SC2086");
+    assert_eq!(finding.severity, "info");
+    assert_eq!(
+        finding.message,
+        "Double quote to prevent globbing and word splitting"
+    );
     assert_eq!((finding.start.line, finding.start.column), (7, 19));
     assert_eq!((finding.end.line, finding.end.column), (7, 21));
     assert_eq!(

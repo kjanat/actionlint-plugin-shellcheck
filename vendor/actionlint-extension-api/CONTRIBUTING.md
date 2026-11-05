@@ -14,17 +14,14 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-actionlint-extension-api = { path = "../actionlint/crates/actionlint-extension-api" }
+actionlint-extension-api = { path = "../actionlint/plugins/sdk/rust" }
 ```
 
-The path points at the SDK in the adjacent checkout. Use the analyzer implementation from the [README](README.md), then
-build the plugin with `cargo build --target wasm32-wasip2` from its own directory.
+The path points at the SDK in the adjacent checkout. Use the analyzer implementation from the [README](README.md), then build the plugin with `cargo build --target wasm32-wasip2` from its own directory.
 
 ## Publishing to crates.io
 
-Run [Publish Rust SDK](../../.github/workflows/sdk-publish.yml) from `master`, supplying the version in this crate's
-[Cargo.toml](Cargo.toml). Dry-run is enabled by default. The workflow tests default and all features, runs clippy, and
-builds the packaged crate before publication.
+Run [Publish Rust SDK](../../../.github/workflows/sdk-publish.yml) from `master`, supplying the version in this crate's [Cargo.toml](Cargo.toml). Dry-run is enabled by default. The workflow tests default and all features, runs clippy, and builds the packaged crate before publication.
 
 ```sh
 gh workflow run sdk-publish.yml --ref master -f version=0.1.0 -F dry-run=true
@@ -40,9 +37,7 @@ cargo clippy --locked -p actionlint-extension-api --all-targets --all-features -
 cargo publish --locked -p actionlint-extension-api --all-features --registry crates-io --dry-run
 ```
 
-The [first publication requires an API token](https://crates.io/docs/trusted-publishing). Select
-`authentication=bootstrap-token` and disable dry-run when ready to publish. This uses `CARGO_REGISTRY_TOKEN` from the
-repository's `crates-io` environment. No tag or actionlint release is created.
+The [first publication requires an API token](https://crates.io/docs/trusted-publishing). Select `authentication=bootstrap-token` and disable dry-run when ready to publish. This uses `CARGO_REGISTRY_TOKEN` from the repository's `crates-io` environment. No tag or actionlint release is created.
 
 ```sh
 gh workflow run sdk-publish.yml --ref master -f version=0.1.0 -F dry-run=false -f authentication=bootstrap-token
@@ -57,6 +52,4 @@ After the first publication, add a GitHub trusted publisher in the crate's crate
 | Workflow filename | `sdk-publish.yml` |
 | Environment       | `crates-io`       |
 
-Use `authentication=trusted-publishing` for subsequent versions. It obtains a short-lived token through GitHub OIDC;
-authentication failure never falls back to the bootstrap token. Remove the bootstrap secret after trusted publishing
-succeeds. The GitHub `crates-io` environment permits deployments only from `master`.
+Use `authentication=trusted-publishing` for subsequent versions. It obtains a short-lived token through GitHub OIDC; authentication failure never falls back to the bootstrap token. Remove the bootstrap secret after trusted publishing succeeds. The GitHub `crates-io` environment permits deployments only from `master`.

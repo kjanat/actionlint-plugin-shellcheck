@@ -9,9 +9,12 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"actionlint.kjanat.dev/v2/analyzer"
-	"actionlint.kjanat.dev/v2/diagnostic"
-	"actionlint.kjanat.dev/v2/source"
+	"actionlint.kjanat.dev/v2/internal/checking/executor"
+	scriptmodel "actionlint.kjanat.dev/v2/internal/model/scripts"
+
+	checkinputs "actionlint.kjanat.dev/v2/internal/checking/inputs"
+	sourcepos "actionlint.kjanat.dev/v2/internal/input/source"
+	"actionlint.kjanat.dev/v2/internal/results"
 	"github.com/kjanat/wacogo/wasi/filesystem/preopens"
 )
 
@@ -31,52 +34,52 @@ func (s *sourceFiles) Open(name string) (fs.File, error) {
 // The fixtures run one workflow-owned script, registered in a single-entry
 // invocation graph so the host accepts its occurrence for shell preparation.
 var (
-	sourceEntry      = analyzer.OccurrenceID(strings.Repeat("a", 64))
-	sourceOccurrence = analyzer.OccurrenceID(strings.Repeat("b", 64))
-	sourceDocument   = source.Reference{Document: "ci.yml", Node: "document"}
+	sourceEntry      = checkinputs.OccurrenceID(strings.Repeat("a", 64))
+	sourceOccurrence = checkinputs.OccurrenceID(strings.Repeat("b", 64))
+	sourceDocument   = sourcepos.Reference{Document: "ci.yml", Node: "document"}
 )
 
-func sourceScript(text string) analyzer.Script {
-	reference := source.Reference{Document: "ci.yml", Node: "run"}
-	script := analyzer.Script{
-		Reference: reference, Text: text, Path: "ci.yml", Start: diagnostic.Position{Line: 1, Column: 1},
-		Occurrence: analyzer.ScriptOccurrence{ID: sourceOccurrence, Owner: sourceEntry, Ancestry: []analyzer.OccurrenceID{sourceEntry}, Declaration: reference, Kind: analyzer.RunScript},
-		Runtime:    &analyzer.Runtime{Shell: "bash", ShellKnown: true, Directory: "/workspace", DirectoryKnown: true},
+func sourceScript(text string) checkinputs.Script {
+	reference := sourcepos.Reference{Document: "ci.yml", Node: "run"}
+	script := checkinputs.Script{
+		Reference: reference, Text: text, Path: "ci.yml", Start: sourcepos.Position{Line: 1, Column: 1},
+		Occurrence: checkinputs.ScriptOccurrence{ID: sourceOccurrence, Owner: sourceEntry, Ancestry: []checkinputs.OccurrenceID{sourceEntry}, Declaration: reference, Kind: checkinputs.RunScript},
+		Runtime:    &scriptmodel.Execution{Shell: "bash", ShellKnown: true, Directory: "/workspace", DirectoryKnown: true},
 	}
 	for i, line := range strings.Split(text, "\n") {
-		script.Spans = append(script.Spans, analyzer.Span{Line: i + 1, Start: 1, End: len(line) + 1, Document: diagnostic.Position{Line: i + 1, Column: 1}})
+		script.Spans = append(script.Spans, scriptmodel.Span{Line: i + 1, Start: 1, End: len(line) + 1, Document: sourcepos.Position{Line: i + 1, Column: 1}})
 	}
 	return script
 }
 
 // These filesystem tests supply identity-mapped shell fixtures. Preparation
 // semantics are covered by the application/packaged-engine tests instead.
-func analyzeSources(t *testing.T, component analyzer.Analyzer, input analyzer.Input) ([]diagnostic.Diagnostic, error) {
+func analyzeSources(t *testing.T, component checkinputs.Checker, input checkinputs.Input) ([]results.Diagnostic, error) {
 	t.Helper()
 	script := input.Scripts[0]
-	graph, err := analyzer.NewCallGraph(analyzer.CallGraphData{
-		Entry:    analyzer.InvocationEntry{ID: sourceEntry, Kind: analyzer.WorkflowEntry, Reference: sourceDocument},
-		Budget:   analyzer.InvocationBudget{MaxDepth: 1, MaxCalls: 1, MaxScripts: 1},
-		Scripts:  []analyzer.ScriptOccurrence{script.Occurrence},
+	graph, err := checkinputs.NewCallGraph(checkinputs.CallGraphData{
+		Entry:    checkinputs.InvocationEntry{ID: sourceEntry, Kind: checkinputs.WorkflowEntry, Reference: sourceDocument},
+		Budget:   checkinputs.InvocationBudget{MaxDepth: 1, MaxCalls: 1, MaxScripts: 1},
+		Scripts:  []checkinputs.ScriptOccurrence{script.Occurrence},
 		Complete: true,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	input.Reference, input.CallGraph = sourceDocument, graph
-	input.Available = []analyzer.Fact{analyzer.Scripts, analyzer.Invocations, analyzer.Execution}
-	input.PrepareScript = func(_ context.Context, occurrence analyzer.OccurrenceID, _ *string) (*analyzer.PreparedScript, error) {
+	input.AvailableInputs = []checkinputs.InputKind{checkinputs.Scripts, checkinputs.Invocations, checkinputs.Execution}
+	input.PrepareScript = func(_ context.Context, occurrence checkinputs.OccurrenceID, _ *string) (*checkinputs.PreparedScript, error) {
 		if occurrence != script.Occurrence.ID {
 			t.Fatalf("unexpected script occurrence: %v", occurrence)
 		}
 		dialect := "bash"
-		prepared := &analyzer.PreparedScript{Text: script.Text, Sanitized: script.Text, Dialect: &dialect, Shell: "bash", Excluded: []uint32{1091}}
+		prepared := &checkinputs.PreparedScript{Text: script.Text, Sanitized: script.Text, Dialect: &dialect, Shell: "bash", Excluded: []uint32{1091}}
 		for index := range strings.Split(script.Text, "\n") {
-			prepared.Lines = append(prepared.Lines, analyzer.PreparedLine{Kind: analyzer.PreparedScriptLine, Line: index + 1})
+			prepared.Lines = append(prepared.Lines, checkinputs.PreparedLine{Kind: checkinputs.PreparedScriptLine, Line: index + 1})
 		}
 		return prepared, nil
 	}
-	return component.Analyze(t.Context(), input)
+	return executor.Run(t.Context(), input, []checkinputs.Registration{{Checker: component, Options: input.Options}})
 }
 
 // Dependency tracking needs source reads even when those files produce no
@@ -93,15 +96,15 @@ VALUE=clean
 		"lib/nested.sh": &fstest.MapFile{Data: []byte("FLAGS=one\n")},
 	}}
 	external := &sourceFiles{FS: fstest.MapFS{"shared.sh": &fstest.MapFile{Data: []byte("SHARED=two\n")}}}
-	input := analyzer.Input{
+	input := checkinputs.Input{
 		Options:     json.RawMessage(`{"external-sources":true,"source-path":["/sources/0"]}`),
-		SourceRoots: []analyzer.SourceRoot{{Host: "/actual/repo", Guest: "/workspace"}},
-		Scripts: []analyzer.Script{sourceScript(`. shared.sh
+		SourceRoots: []checkinputs.SourceRoot{{Host: "/actual/repo", Guest: "/workspace"}},
+		Scripts: []checkinputs.Script{sourceScript(`. shared.sh
 # shellcheck source=/actual/repo/lib/clean.sh
 . dynamic-name
 printf '%s\n' "$VALUE" "$FLAGS" "$SHARED"
 `)},
-		Files: []analyzer.FileSystem{
+		Files: []checkinputs.FileSystem{
 			{Path: "/workspace", FS: preopens.ImmutableFS{FS: files}},
 			{Path: "/sources/0", FS: preopens.ImmutableFS{FS: external}},
 		},
@@ -130,10 +133,10 @@ func TestSourceEditChangesSubsequentAnalysis(t *testing.T) {
 		content  string
 		warnings int
 	}{{"FLAGS=one\n", 0}, {"FLAGS='one two'\n", 1}} {
-		input := analyzer.Input{
+		input := checkinputs.Input{
 			Options: json.RawMessage(`{"external-sources":true}`),
-			Scripts: []analyzer.Script{sourceScript(". ./values.sh\necho $FLAGS\n")},
-			Files:   []analyzer.FileSystem{{Path: "/workspace", FS: preopens.ImmutableFS{FS: fstest.MapFS{"values.sh": &fstest.MapFile{Data: []byte(tc.content)}}}}},
+			Scripts: []checkinputs.Script{sourceScript(". ./values.sh\necho $FLAGS\n")},
+			Files:   []checkinputs.FileSystem{{Path: "/workspace", FS: preopens.ImmutableFS{FS: fstest.MapFS{"values.sh": &fstest.MapFile{Data: []byte(tc.content)}}}}},
 		}
 		findings, err := analyzeSources(t, component, input)
 		if err != nil || len(findings) != tc.warnings {
@@ -151,10 +154,10 @@ func TestSourceEditChangesSubsequentAnalysis(t *testing.T) {
 // would either hide the error or send the editor to an unrelated location.
 func TestSourcedParseFailureIsReportedAtInvocation(t *testing.T) {
 	component := load(t)
-	findings, err := analyzeSources(t, component, analyzer.Input{
+	findings, err := analyzeSources(t, component, checkinputs.Input{
 		Options: json.RawMessage(`{"external-sources":true}`),
-		Scripts: []analyzer.Script{sourceScript(". ./broken.sh\nprintf 'ok\\n'\n")},
-		Files: []analyzer.FileSystem{{Path: "/workspace", FS: preopens.ImmutableFS{FS: fstest.MapFS{
+		Scripts: []checkinputs.Script{sourceScript(". ./broken.sh\nprintf 'ok\\n'\n")},
+		Files: []checkinputs.FileSystem{{Path: "/workspace", FS: preopens.ImmutableFS{FS: fstest.MapFS{
 			"broken.sh": &fstest.MapFile{Data: []byte("if then\n")},
 		}}}},
 	})
@@ -196,10 +199,10 @@ func TestUnknownDirectoryUsesOnlyIndependentSourcePaths(t *testing.T) {
 			} else {
 				script.Runtime.DirectoryKnown = false
 			}
-			findings, err := analyzeSources(t, component, analyzer.Input{
-				Options: json.RawMessage(tc.options), Scripts: []analyzer.Script{script},
-				SourceRoots: []analyzer.SourceRoot{{Host: "/repo", Guest: "/sources/0"}},
-				Files:       []analyzer.FileSystem{{Path: "/sources/0", FS: preopens.ImmutableFS{FS: files}}},
+			findings, err := analyzeSources(t, component, checkinputs.Input{
+				Options: json.RawMessage(tc.options), Scripts: []checkinputs.Script{script},
+				SourceRoots: []checkinputs.SourceRoot{{Host: "/repo", Guest: "/sources/0"}},
+				Files:       []checkinputs.FileSystem{{Path: "/sources/0", FS: preopens.ImmutableFS{FS: files}}},
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -222,10 +225,10 @@ func TestAbsoluteSourceSearchOrderMatchesShellCheck(t *testing.T) {
 		if shadow {
 			workspace["sources/0/values.sh"] = &fstest.MapFile{Data: []byte("FLAGS='one two'\n")}
 		}
-		findings, err := analyzeSources(t, component, analyzer.Input{
+		findings, err := analyzeSources(t, component, checkinputs.Input{
 			Options: json.RawMessage(`{"external-sources":true}`),
-			Scripts: []analyzer.Script{sourceScript(". /sources/0/values.sh\necho $FLAGS\n")},
-			Files: []analyzer.FileSystem{
+			Scripts: []checkinputs.Script{sourceScript(". /sources/0/values.sh\necho $FLAGS\n")},
+			Files: []checkinputs.FileSystem{
 				{Path: "/workspace", FS: preopens.ImmutableFS{FS: workspace}},
 				{Path: "/sources/0", FS: preopens.ImmutableFS{FS: fstest.MapFS{"values.sh": &fstest.MapFile{Data: []byte("FLAGS=one\n")}}}},
 			},

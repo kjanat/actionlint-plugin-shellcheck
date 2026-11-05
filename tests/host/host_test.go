@@ -12,14 +12,26 @@ import (
 	"strings"
 	"testing"
 
-	"actionlint.kjanat.dev/v2/analysis"
-	"actionlint.kjanat.dev/v2/analyzer"
-	"actionlint.kjanat.dev/v2/diagnostic"
-	"actionlint.kjanat.dev/v2/plugin"
-	"actionlint.kjanat.dev/v2/rule"
+	"actionlint.kjanat.dev/v2/internal/checking/executor"
+	tools "actionlint.kjanat.dev/v2/internal/checking/scripts/contract"
+	"actionlint.kjanat.dev/v2/internal/checking/scripts/registry"
+
+	sourcepos "actionlint.kjanat.dev/v2/internal/input/source"
+	"actionlint.kjanat.dev/v2/internal/input/workspace"
+	pluginartifact "actionlint.kjanat.dev/v2/internal/plugins/artifacts"
+
+	"actionlint.kjanat.dev/v2/internal/checking"
+	checkinputs "actionlint.kjanat.dev/v2/internal/checking/inputs"
+	rule "actionlint.kjanat.dev/v2/internal/checking/rules"
+	componenthost "actionlint.kjanat.dev/v2/internal/plugins/execution/component"
+	"actionlint.kjanat.dev/v2/internal/results"
 )
 
 const workflow = "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo $HOME\n      - run: |\n          [[ -n \"$HOME\" ]]\n        shell: sh\n      - run: Write-Host $x\n        shell: pwsh\n"
+
+func pluginTools() []tools.Registration {
+	return registry.Registrations(registry.Selections{"shellcheck": {Command: "shellcheck", ManagedOnly: true}})
+}
 
 func pluginPath() string {
 	if path := os.Getenv("ACTIONLINT_PLUGIN_SHELLCHECK"); path != "" {
@@ -28,9 +40,9 @@ func pluginPath() string {
 	return filepath.Join("..", "..", "artifacts", "plugin.wasm")
 }
 
-func load(t *testing.T) *plugin.Component {
+func load(t *testing.T) *componenthost.Plugin {
 	t.Helper()
-	component, err := plugin.Load(t.Context(), pluginPath(), plugin.Options{})
+	component, err := componenthost.Load(t.Context(), pluginPath(), componenthost.Options{ReservedRules: checking.BuiltinRuleNames()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,25 +54,22 @@ func load(t *testing.T) *plugin.Component {
 	return component
 }
 
-func analyze(t *testing.T, options string) []diagnostic.Diagnostic {
+func analyze(t *testing.T, options string) []results.Diagnostic {
 	t.Helper()
 	ctx := context.Background()
 	component := load(t)
 	if name := component.Descriptor().Name; name != "shellcheck" {
 		t.Fatalf("plugin name %q", name)
 	}
-	registration := analyzer.Registration{Analyzer: component}
+	registration := checkinputs.Registration{Checker: component}
 	if options != "" {
 		registration.Options = json.RawMessage(options)
 	}
-	result, err := analysis.Analyze(ctx, analysis.Request{
-		Sources: []analysis.Source{{Path: "workflow.yml", Content: []byte(workflow)}},
-		Options: analysis.Options{Analyzers: []analyzer.Registration{registration}},
-	})
+	result, err := checking.Analyze(ctx, checking.Options{Tools: pluginTools(), Analyzers: []checkinputs.Registration{registration}}, []workspace.Source{{Path: "workflow.yml", Content: []byte(workflow)}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	var findings []diagnostic.Diagnostic
+	var findings []results.Diagnostic
 	for _, finding := range result.Diagnostics {
 		if finding.Rule == "shellcheck" {
 			findings = append(findings, finding)
@@ -70,7 +79,7 @@ func analyze(t *testing.T, options string) []diagnostic.Diagnostic {
 }
 
 // A component can compile successfully while its host adapter drops findings or
-// shifts their locations. This loads the packaged Wasm through the public host,
+// shifts their locations. This loads the packaged Wasm through the host component loader,
 // analyzes Bash and sh steps, and checks their diagnostics and quote edits. The
 // PowerShell step also catches accidental shell analysis of another language.
 func TestPluginReportsShellCheckFindings(t *testing.T) {
@@ -87,7 +96,7 @@ func TestPluginReportsShellCheckFindings(t *testing.T) {
 	}
 	for i, column := range []int{19, 24} {
 		edit := quote.Fixes[0].Edits[i]
-		position := diagnostic.Position{Line: 6, Column: column}
+		position := sourcepos.Position{Line: 6, Column: column}
 		if edit.Path != "workflow.yml" || edit.Start != position || edit.End != position || edit.Replacement != `"` {
 			t.Fatalf("quote edit: %+v", edit)
 		}
@@ -99,7 +108,7 @@ func TestPluginReportsShellCheckFindings(t *testing.T) {
 
 // Users expect a disabled ShellCheck code to disappear without losing unrelated
 // findings. This passes the option through the host and component boundary and
-// checks the remaining bashism diagnostic. It catches configuration that parses
+// checks the remaining bashism results. It catches configuration that parses
 // correctly in Rust but gets lost while the host invokes the Wasm plugin.
 func TestPluginOptionsDisableCodes(t *testing.T) {
 	findings := analyze(t, `{"disable": ["SC2086"]}`)
@@ -110,21 +119,18 @@ func TestPluginOptionsDisableCodes(t *testing.T) {
 
 // Misspelled settings must produce a useful error for both supported call paths.
 // This submits an unknown key through the host's schema validation and directly
-// to the component, checking that each names the bad key. Otherwise one caller
+// to the component host, checking that each names the bad key. Otherwise one caller
 // could silently ignore a setting that another caller correctly rejects.
 func TestPluginRejectsUnknownOptions(t *testing.T) {
 	ctx := context.Background()
 	component := load(t)
-	_, err := analysis.Analyze(ctx, analysis.Request{
-		Sources: []analysis.Source{{Path: "workflow.yml", Content: []byte(workflow)}},
-		Options: analysis.Options{Analyzers: []analyzer.Registration{{Analyzer: component, Options: json.RawMessage(`{"shel": "sh"}`)}}},
-	})
+	_, err := checking.Analyze(ctx, checking.Options{Tools: pluginTools(), Analyzers: []checkinputs.Registration{{Checker: component, Options: json.RawMessage(`{"shel": "sh"}`)}}}, []workspace.Source{{Path: "workflow.yml", Content: []byte(workflow)}})
 	if err == nil || !strings.Contains(err.Error(), "additional properties") || !strings.Contains(err.Error(), "shel") {
 		t.Fatalf("expected host schema error, got %v", err)
 	}
-	findings, err := component.Analyze(ctx, analyzer.Input{Options: json.RawMessage(`{"shel":"sh"}`)})
-	if len(findings) != 0 || err == nil || !strings.Contains(err.Error(), "unknown field") || !strings.Contains(err.Error(), "shel") {
-		t.Fatalf("expected component option outcome, got %v, %v", findings, err)
+	findings, err := executor.Run(ctx, checkinputs.Input{}, []checkinputs.Registration{{Checker: component, Options: json.RawMessage(`{"shel":"sh"}`)}})
+	if len(findings) != 0 || err == nil || !strings.Contains(err.Error(), "additional properties") || !strings.Contains(err.Error(), "shel") {
+		t.Fatalf("expected direct host schema rejection, got %v, %v", findings, err)
 	}
 }
 
@@ -143,32 +149,29 @@ func TestPluginValidatesOptionalCheckNames(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			_, err = analysis.Analyze(t.Context(), analysis.Request{
-				Sources: []analysis.Source{{Path: "workflow.yml", Content: []byte(workflow)}},
-				Options: analysis.Options{Analyzers: []analyzer.Registration{{Analyzer: component, Options: options}}},
-			})
+			_, err = checking.Analyze(t.Context(), checking.Options{Tools: pluginTools(), Analyzers: []checkinputs.Registration{{Checker: component, Options: options}}}, []workspace.Source{{Path: "workflow.yml", Content: []byte(workflow)}})
 			if err == nil || !strings.Contains(err.Error(), "jsonschema validation failed") || !strings.Contains(err.Error(), "/enable/0") {
 				t.Fatalf("expected schema rejection for %q, got %v", name, err)
 			}
-			findings, err := component.Analyze(t.Context(), analyzer.Input{Options: options})
-			if len(findings) != 0 || err == nil || !strings.Contains(err.Error(), "enable entry") || !strings.Contains(err.Error(), name) {
-				t.Fatalf("expected component optional-check rejection, got %v, %v", findings, err)
+			findings, err := executor.Run(t.Context(), checkinputs.Input{}, []checkinputs.Registration{{Checker: component, Options: options}})
+			if len(findings) != 0 || err == nil || !strings.Contains(err.Error(), "/enable/0") {
+				t.Fatalf("expected direct host schema rejection, got %v, %v", findings, err)
 			}
 		})
 	}
-	if _, err := component.Analyze(t.Context(), analyzer.Input{Options: json.RawMessage(`{"enable":["all"]}`)}); err != nil {
+	if _, err := analyzeSources(t, component, checkinputs.Input{Scripts: []checkinputs.Script{sourceScript("true")}, Options: json.RawMessage(`{"enable":["all"]}`)}); err != nil {
 		t.Fatalf("all selector rejected: %v", err)
 	}
 }
 
 type rawFixAnalyzer struct {
-	analyzer.Analyzer
-	analyzer.ToolIntegrator
+	checkinputs.Checker
+	checkinputs.ToolIntegrator
 	inspected bool
 }
 
-func (a *rawFixAnalyzer) Analyze(ctx context.Context, input analyzer.Input) ([]diagnostic.Diagnostic, error) {
-	findings, err := a.Analyzer.Analyze(ctx, input)
+func (a *rawFixAnalyzer) CheckDocument(ctx context.Context, input checkinputs.Input) ([]results.Diagnostic, error) {
+	findings, err := a.Checker.CheckDocument(ctx, input)
 	if err != nil {
 		return findings, err
 	}
@@ -194,11 +197,8 @@ func (a *rawFixAnalyzer) Analyze(ctx context.Context, input analyzer.Input) ([]d
 // Editors need those original revision keys to reject edits against changed files.
 func TestFixRevisionsUseDeclaringPathBeforePolicy(t *testing.T) {
 	component := load(t)
-	checked := &rawFixAnalyzer{Analyzer: component, ToolIntegrator: component}
-	_, err := analysis.Analyze(t.Context(), analysis.Request{
-		Sources: []analysis.Source{{Path: "workflow.yml", Content: []byte(workflow)}},
-		Options: analysis.Options{Analyzers: []analyzer.Registration{{Analyzer: checked}}},
-	})
+	checked := &rawFixAnalyzer{Checker: component, ToolIntegrator: component}
+	_, err := checking.Analyze(t.Context(), checking.Options{Tools: pluginTools(), Analyzers: []checkinputs.Registration{{Checker: checked}}}, []workspace.Source{{Path: "workflow.yml", Content: []byte(workflow)}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -209,22 +209,22 @@ func TestFixRevisionsUseDeclaringPathBeforePolicy(t *testing.T) {
 
 // Compare the packaged declaration with the descriptor exported by the loaded guest.
 func TestPackagedDeclarationMatchesRuntime(t *testing.T) {
-	info, err := plugin.Inspect(t.Context(), pluginPath(), plugin.ArtifactOptions{})
+	inspected, err := pluginartifact.Resolve(t.Context(), pluginPath(), pluginartifact.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info.Kind != plugin.ComponentArtifact {
-		t.Fatalf("artifact kind %q", info.Kind)
+	if inspected.Info.Kind != pluginartifact.Component {
+		t.Fatalf("artifact kind %q", inspected.Info.Kind)
 	}
 	type componentDeclaration struct {
 		rule.Descriptor
-		Requires []analyzer.Fact `json:"requires"`
+		RequiredInputs []checkinputs.InputKind `json:"required_inputs"`
 	}
 	var declaration struct {
 		ID         string                `json:"id"`
 		Descriptor *componentDeclaration `json:"descriptor"`
 	}
-	if err := json.Unmarshal(info.Metadata, &declaration); err != nil {
+	if err := json.Unmarshal(inspected.Info.Metadata, &declaration); err != nil {
 		t.Fatal(err)
 	}
 	component := load(t)
@@ -239,7 +239,7 @@ func TestPackagedDeclarationMatchesRuntime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	actual, err := json.Marshal(componentDeclaration{Descriptor: descriptor.Descriptor, Requires: descriptor.Requires})
+	actual, err := json.Marshal(componentDeclaration{Descriptor: descriptor.Descriptor, RequiredInputs: descriptor.RequiredInputs})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -260,7 +260,7 @@ func TestPackagedDeclarationMatchesRuntime(t *testing.T) {
 // section, and hashes every file listed in SHA256SUMS. It catches packaging that
 // ships files from different builds or checksum entries pointing outside the package.
 func TestPackageSidecarsAndChecksums(t *testing.T) {
-	info, err := plugin.Inspect(t.Context(), pluginPath(), plugin.ArtifactOptions{})
+	inspected, err := pluginartifact.Resolve(t.Context(), pluginPath(), pluginartifact.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -269,7 +269,7 @@ func TestPackageSidecarsAndChecksums(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(info.Metadata, sidecar) {
+	if !bytes.Equal(inspected.Info.Metadata, sidecar) {
 		t.Fatal("embedded metadata differs from sidecar")
 	}
 	manifest, err := os.ReadFile(filepath.Join(dir, "SHA256SUMS"))

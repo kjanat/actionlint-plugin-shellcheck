@@ -3,9 +3,7 @@
 `kjanat:actionlint/prepared-scripts@0.2.0` centralizes the preparation used by
 native shell analysis and component analyzers. Guests consume its returned
 source, dialect, exclusions and line mapping without reimplementing preparation.
-The callback accepts only run occurrence IDs whose script text was supplied in the current analyze call. Known but
-unselected occurrences, action inputs, calls, the entry and unknown IDs return an error. Occurrence identity preserves
-distinct invocation context when declarations are shared.
+The callback accepts only run occurrence IDs whose script text was supplied in the current analyze call. Known but unselected occurrences, action inputs, calls, the entry and unknown IDs return an error. Occurrence identity preserves distinct invocation context when declarations are shared.
 
 The runtime shell, when known, takes precedence over the declared shell. Supported
 inferred dialects are bash, sh, dash and ksh. An initial `shellcheck shell=`

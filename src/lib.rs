@@ -11,10 +11,10 @@ use std::rc::Rc;
 use exports::kjanat::actionlint::analyzer::Descriptor;
 use exports::kjanat::actionlint::analyzer::Diagnostic;
 use exports::kjanat::actionlint::analyzer::Edit;
-use exports::kjanat::actionlint::analyzer::Fact;
 use exports::kjanat::actionlint::analyzer::Fix;
 use exports::kjanat::actionlint::analyzer::Guest;
 use exports::kjanat::actionlint::analyzer::Input;
+use exports::kjanat::actionlint::analyzer::InputKind;
 use exports::kjanat::actionlint::analyzer::Outcome;
 use exports::kjanat::actionlint::analyzer::Position;
 use exports::kjanat::actionlint::analyzer::Revision;
@@ -70,7 +70,7 @@ pub fn descriptor() -> Descriptor {
         description: env!("CARGO_PKG_DESCRIPTION").to_string(),
         category: "correctness".to_string(),
         subcategory: "scripts".to_string(),
-        maturity: "experimental".to_string(),
+        maturity: String::new(),
         provider: "shellcheck-rs".to_string(),
         recommended: true,
         explanation: concat!(
@@ -88,7 +88,7 @@ pub fn descriptor() -> Descriptor {
         options_schema: options::schema().to_string(),
         examples: Vec::new(),
         name: NAME.to_string(),
-        requires: vec![Fact::Scripts, Fact::Invocations, Fact::Execution],
+        required_inputs: vec![InputKind::Scripts, InputKind::Invocations, InputKind::Execution],
     }
 }
 
@@ -230,7 +230,6 @@ fn map_result(
             .comment_position(comment.end.line, end_column)
             .or_else(|| position(script, end_line, end_column, true))
             .unwrap_or(start);
-        let line = if attached.is_some() { start.line } else { line };
         findings.push(Diagnostic {
             reference: Some(script.reference.clone()),
             explanation: String::new(),
@@ -243,10 +242,7 @@ fn map_result(
             rule: String::new(),
             code: format!("SC{}", comment.comment.code),
             severity: level.to_string(),
-            message: format!(
-                "shellcheck reported issue in this script: SC{}:{level}:{line}:{column}: {message}",
-                comment.comment.code
-            ),
+            message: message.to_string(),
             path: script.path.clone(),
             start,
             end,
