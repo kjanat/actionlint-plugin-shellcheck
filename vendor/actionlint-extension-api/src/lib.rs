@@ -24,7 +24,8 @@ pub mod bindings {
     });
 }
 
-pub use bindings::{exports, kjanat};
+pub use bindings::exports;
+pub use bindings::kjanat;
 pub use exports::kjanat::actionlint::analyzer::*;
 
 /// Canonical analyzer interface implemented by this SDK.

@@ -7,7 +7,10 @@ Implement `actionlint_extension_api::Guest`, then export the implementation with
 A minimal analyzer that reports no findings:
 
 ```rust
-use actionlint_extension_api::{Descriptor, Guest, Input, Outcome};
+use actionlint_extension_api::Descriptor;
+use actionlint_extension_api::Guest;
+use actionlint_extension_api::Input;
+use actionlint_extension_api::Outcome;
 
 pub struct Plugin;
 
@@ -81,7 +84,10 @@ the registry and lockfile identity; it can differ from the analyzer's rule name
 and the package's display name. Keep it unchanged across releases. Tool
 integration identifies its tool through the analyzer's rule name.
 
-This crate owns the public contracts in [`wit/`](https://github.com/kjanat/actionlint/tree/master/crates/actionlint-extension-api/wit). Host generation, examples and
+This crate owns the public contracts in
+[`wit/`](https://github.com/kjanat/actionlint/tree/master/crates/actionlint-extension-api/wit). Host generation,
+examples and
 fixtures read these same files. Cargo includes them in the published package.
 
-For local SDK development, see [CONTRIBUTING.md](https://github.com/kjanat/actionlint/blob/master/crates/actionlint-extension-api/CONTRIBUTING.md).
+For local SDK development, see
+[CONTRIBUTING.md](https://github.com/kjanat/actionlint/blob/master/crates/actionlint-extension-api/CONTRIBUTING.md).

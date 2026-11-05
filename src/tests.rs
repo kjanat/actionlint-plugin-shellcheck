@@ -1,6 +1,8 @@
 use super::*;
-use exports::kjanat::actionlint::analyzer::{SourceReference, Span};
-use kjanat::actionlint::prepared_scripts::{Line, Prepared};
+use exports::kjanat::actionlint::analyzer::SourceReference;
+use exports::kjanat::actionlint::analyzer::Span;
+use kjanat::actionlint::prepared_scripts::Line;
+use kjanat::actionlint::prepared_scripts::Prepared;
 
 fn script(text: &str) -> Script {
     Script {

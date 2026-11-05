@@ -2,21 +2,18 @@
 #:tombi toml-version = "v1.1.0"
 
 [tools]
+"github:kjanat/kprint"    = "latest"
 "github:kjanat/runner"    = "0.28.0"
-"github:rvben/rumdl"      = "0.2.79"
-"github:tombi-toml/tombi" = "1.8.4"
+"github:rvben/rumdl"      = "0.3.2"
+"github:tombi-toml/tombi" = "1.10.0"
 deno                      = "2.9.7"
-go                        = "1.27.2"
-golangci-lint             = "2.14.0"
+go                        = "1.27.3"
+golangci-lint             = "2.15.0"
 
 [tools."github:WebAssembly/binaryen"]
 version        = "133"
 version_prefix = "version_"
 filter_bins    = ["wasm-opt"]
-
-[tools."github:kjanat/dprint"]
-version = "0.59.0-kjanat"
-depends = ["github:tombi-toml/tombi"]
 
 [deps.deno]
 auto    = true

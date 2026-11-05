@@ -7,11 +7,20 @@ use std::path::Path;
 
 use serde::Serialize;
 use serde_json::json;
-use sha2::{Digest, Sha256};
-use wasm_encoder::{Component, CustomSection, RawSection};
-use wasmparser::{Encoding, Parser, Payload, Validator};
+use sha2::Digest;
+use sha2::Sha256;
+use wasm_encoder::Component;
+use wasm_encoder::CustomSection;
+use wasm_encoder::RawSection;
+use wasmparser::Encoding;
+use wasmparser::Parser;
+use wasmparser::Payload;
+use wasmparser::Validator;
 
-use crate::{ANALYZER_CONTRACT_SHA256, ANALYZER_INTERFACE, Descriptor, Fact};
+use crate::ANALYZER_CONTRACT_SHA256;
+use crate::ANALYZER_INTERFACE;
+use crate::Descriptor;
+use crate::Fact;
 
 /// Discovery section read by actionlint without starting a guest.
 pub const METADATA_SECTION: &str = "actionlint.plugin";
@@ -217,8 +226,10 @@ pub fn with_metadata(input: &[u8], metadata: &[u8]) -> Result<Vec<u8>> {
 mod tests {
     use super::*;
     use std::path::PathBuf;
-    use std::time::{SystemTime, UNIX_EPOCH};
-    use wasm_encoder::{Module, ModuleSection};
+    use std::time::SystemTime;
+    use std::time::UNIX_EPOCH;
+    use wasm_encoder::Module;
+    use wasm_encoder::ModuleSection;
 
     struct TestDirectory(PathBuf);
 
