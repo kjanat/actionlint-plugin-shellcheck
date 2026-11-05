@@ -14,14 +14,14 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-actionlint-extension-api = { path = "../actionlint/crates/actionlint-extension-api" }
+actionlint-extension-api = { path = "../actionlint/plugins/sdk/rust" }
 ```
 
 The path points at the SDK in the adjacent checkout. Use the analyzer implementation from the [README](README.md), then build the plugin with `cargo build --target wasm32-wasip2` from its own directory.
 
 ## Publishing to crates.io
 
-Run [Publish Rust SDK](../../.github/workflows/sdk-publish.yml) from `master`, supplying the version in this crate's [Cargo.toml](Cargo.toml). Dry-run is enabled by default. The workflow tests default and all features, runs clippy, and builds the packaged crate before publication.
+Run [Publish Rust SDK](../../../.github/workflows/sdk-publish.yml) from `master`, supplying the version in this crate's [Cargo.toml](Cargo.toml). Dry-run is enabled by default. The workflow tests default and all features, runs clippy, and builds the packaged crate before publication.
 
 ```sh
 gh workflow run sdk-publish.yml --ref master -f version=0.1.0 -F dry-run=true

@@ -31,7 +31,7 @@ pub use exports::kjanat::actionlint::analyzer::*;
 pub const ANALYZER_INTERFACE: &str = "kjanat:actionlint/analyzer@0.2.0";
 /// Versioned configuration profile accepted by shell analysis integrations.
 pub const SHELLCHECK_CONFIGURATION_SCHEMA: &str =
-    include_str!("../schemas/shellcheck-config-0.1.0.json");
+    include_str!("../json/shellcheck-config-0.1.0.json");
 /// Analyzer contract source, independent of optional host imports.
 pub const ANALYZER_WIT: &str = include_str!("../wit/analyzer.wit");
 /// SHA-256 of the analyzer contract with LF line endings.

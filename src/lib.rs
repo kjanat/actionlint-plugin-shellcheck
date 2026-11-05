@@ -11,10 +11,10 @@ use std::rc::Rc;
 use exports::kjanat::actionlint::analyzer::Descriptor;
 use exports::kjanat::actionlint::analyzer::Diagnostic;
 use exports::kjanat::actionlint::analyzer::Edit;
-use exports::kjanat::actionlint::analyzer::Fact;
 use exports::kjanat::actionlint::analyzer::Fix;
 use exports::kjanat::actionlint::analyzer::Guest;
 use exports::kjanat::actionlint::analyzer::Input;
+use exports::kjanat::actionlint::analyzer::InputKind;
 use exports::kjanat::actionlint::analyzer::Outcome;
 use exports::kjanat::actionlint::analyzer::Position;
 use exports::kjanat::actionlint::analyzer::Revision;
@@ -70,7 +70,7 @@ pub fn descriptor() -> Descriptor {
         description: env!("CARGO_PKG_DESCRIPTION").to_string(),
         category: "correctness".to_string(),
         subcategory: "scripts".to_string(),
-        maturity: "experimental".to_string(),
+        maturity: String::new(),
         provider: "shellcheck-rs".to_string(),
         recommended: true,
         explanation: concat!(
@@ -88,7 +88,7 @@ pub fn descriptor() -> Descriptor {
         options_schema: options::schema().to_string(),
         examples: Vec::new(),
         name: NAME.to_string(),
-        requires: vec![Fact::Scripts, Fact::Invocations, Fact::Execution],
+        required_inputs: vec![InputKind::Scripts, InputKind::Invocations, InputKind::Execution],
     }
 }
 
