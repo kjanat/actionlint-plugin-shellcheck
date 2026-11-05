@@ -1,7 +1,7 @@
 #:schema https://dprint.kjanat.dev/schemas/v0.json
 
-extends = ["https://raw.githubusercontent.com/kjanat/kjanat/refs/heads/master/configs/dprint.remote.json"]
-plugins = ["npm:@dprint/exec@0.7.3/plugin.json@704701df449dd7e942a71144773778ac529d68c2e4657bfc236d393b898b9a67"]
+extends  = ["https://raw.githubusercontent.com/kjanat/kjanat/refs/heads/master/configs/dprint.remote.json"]
+excludes = ["vendor/"]
 
 [markdown]
 textWrap  = "maintainAndWrap"
@@ -13,8 +13,3 @@ cwd = "${configDir}"
 [[exec.commands]]
 command = "rustfmt --edition 2024 --config imports_granularity=item"
 exts    = ["rs"]
-
-[[exec.commands]]
-command       = "tombi format - --stdin-filename {{file_path}}"
-exts          = ["toml"]
-cacheKeyFiles = ["tombi.toml", "mise.toml"]
