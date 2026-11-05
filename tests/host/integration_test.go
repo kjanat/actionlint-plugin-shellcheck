@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"actionlint.kjanat.dev/v2/analyzer"
+	checkinputs "actionlint.kjanat.dev/v2/internal/checking/inputs"
 )
 
 func TestToolIntegrationNegotiatesConfigurationAndGrants(t *testing.T) {
@@ -18,7 +18,7 @@ func TestToolIntegrationNegotiatesConfigurationAndGrants(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(negotiated.Resources) != 2 || negotiated.Resources[0].Kind != analyzer.ToolWorkspace || negotiated.Resources[1].Kind != analyzer.ToolDirectory || negotiated.Resources[1].Path != "/repo/lib" {
+	if len(negotiated.Resources) != 2 || negotiated.Resources[0].Kind != checkinputs.ToolWorkspace || negotiated.Resources[1].Kind != checkinputs.ToolDirectory || negotiated.Resources[1].Path != "/repo/lib" {
 		t.Fatalf("resource requests: %+v", negotiated.Resources)
 	}
 	var options struct {
@@ -33,7 +33,7 @@ func TestToolIntegrationNegotiatesConfigurationAndGrants(t *testing.T) {
 	}
 	for _, config := range []string{`{"rc-file":".shellcheckrc"}`, `{"disable":["all"]}`, `{"disable":["SC2000-SC3000"]}`} {
 		_, err := component.NegotiateTool(t.Context(), json.RawMessage(config), nil)
-		if _, ok := errors.AsType[*analyzer.UnsupportedToolConfigurationError](err); !ok {
+		if _, ok := errors.AsType[*checkinputs.UnsupportedToolConfigurationError](err); !ok {
 			t.Fatalf("%s: expected negotiated refusal, got %v", config, err)
 		}
 	}

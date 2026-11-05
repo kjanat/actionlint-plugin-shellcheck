@@ -101,10 +101,9 @@ its relative search candidates before falling back to an absolute source name.
 Requirements: the Rust toolchain in `rust-toolchain.toml` with the `wasm32-wasip2` target, which `rustup` installs
 on first use, and Go 1.27 for the host test.
 
-The public SDK is vendored under `vendor/actionlint-extension-api` from actionlint
-commit `8836017f3c5150fcd6eba7b4ae64658b2d5c53e1`. The Go host tests select the
-same commit.
-The [snapshot manifest](vendor/actionlint-extension-api.snapshot.json) records its
+The vendored SDK is based on actionlint commit `8836017f3c5150fcd6eba7b4ae64658b2d5c53e1` and includes local contract
+updates. The Go host tests still pin the base commit and require an updated host for the revised contract. The
+[snapshot manifest](vendor/actionlint-extension-api.snapshot.json) records its
 source identity. Builds need no sibling actionlint checkout or module replacement.
 Keep the SDK's WIT, schemas and Rust bindings together when updating the snapshot.
 
@@ -163,8 +162,10 @@ go -C tests/host test -mod=readonly ./...
 ```
 
 Build and package before running the Go tests. They inspect the packaged metadata without executing it, then load
-the same component through actionlint's public `plugin` package, checking positions, fixes, option errors, descriptor
+the same component through actionlint's private host packages, checking positions, fixes, option errors, descriptor
 parity and package checksums. `ACTIONLINT_PLUGIN_SHELLCHECK` selects another packaged component with its sidecars.
+The unpublished host-test module uses the actionlint module prefix to access those private packages and pins
+the published host revision. The distributed component depends on the guest contract, not the host's Go API.
 Native tests also cover partial dataflow/startup failures without discarding other findings.
 
 The `candidate-verification` CI artifact contains the receipt for the package built by that run.

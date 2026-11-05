@@ -6,23 +6,24 @@ import (
 	"strings"
 	"testing"
 
-	"actionlint.kjanat.dev/v2/analysis"
-	"actionlint.kjanat.dev/v2/analyzer"
-	"actionlint.kjanat.dev/v2/diagnostic"
+	inputmodel "actionlint.kjanat.dev/v2/internal/input"
+	sourcepos "actionlint.kjanat.dev/v2/internal/input/source"
+	"actionlint.kjanat.dev/v2/internal/input/workspace"
+
+	"actionlint.kjanat.dev/v2/internal/checking"
+	checkinputs "actionlint.kjanat.dev/v2/internal/checking/inputs"
+	"actionlint.kjanat.dev/v2/internal/results"
 )
 
 const directiveWorkflowPrefix = "on: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n"
 
-func directiveFindings(t *testing.T, component analyzer.Analyzer, source string) []diagnostic.Diagnostic {
+func directiveFindings(t *testing.T, component checkinputs.Checker, source string) []results.Diagnostic {
 	t.Helper()
-	result, err := analysis.Analyze(t.Context(), analysis.Request{
-		Sources: []analysis.Source{{Path: "workflow.yml", Content: []byte(source)}},
-		Options: analysis.Options{Analyzers: []analyzer.Registration{{Analyzer: component}}},
-	})
+	result, err := checking.Analyze(t.Context(), checking.Options{Tools: pluginTools(), Analyzers: []checkinputs.Registration{{Checker: component}}}, []workspace.Source{{Path: "workflow.yml", Content: []byte(source)}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	var findings []diagnostic.Diagnostic
+	var findings []results.Diagnostic
 	for _, finding := range result.Diagnostics {
 		if finding.Rule == "shellcheck" {
 			findings = append(findings, finding)
@@ -54,7 +55,7 @@ func TestYAMLDirectivesReachThePackagedEngine(t *testing.T) {
 	// a YAML directive must still report its original diagnostic and quote edits.
 	plain := directiveWorkflowPrefix + "      - run: echo $HI\n"
 	findings := directiveFindings(t, component, plain)
-	if len(findings) != 1 || findings[0].Code != "SC2086" || findings[0].Start != (diagnostic.Position{Line: 6, Column: 19}) {
+	if len(findings) != 1 || findings[0].Code != "SC2086" || findings[0].Start != (sourcepos.Position{Line: 6, Column: 19}) {
 		t.Fatalf("plain findings after annotated calls=%+v", findings)
 	}
 	if len(findings[0].Fixes) != 1 || len(findings[0].Fixes[0].Edits) != 2 {
@@ -70,7 +71,7 @@ func TestYAMLDirectiveErrorsAndRemainingFixesUseOriginalCoordinates(t *testing.T
 	for _, finding := range findings {
 		if finding.Code == "SC1103" {
 			found = true
-			if finding.Start != (diagnostic.Position{Line: 6, Column: 41}) || len(finding.Fixes) != 0 {
+			if finding.Start != (sourcepos.Position{Line: 6, Column: 41}) || len(finding.Fixes) != 0 {
 				t.Fatalf("directive error=%+v", finding)
 			}
 		}
@@ -80,12 +81,12 @@ func TestYAMLDirectiveErrorsAndRemainingFixesUseOriginalCoordinates(t *testing.T
 	}
 	source = directiveWorkflowPrefix + "      - run: echo $HI # shellcheck disable=SC2034\n"
 	findings = directiveFindings(t, component, source)
-	if len(findings) != 1 || findings[0].Code != "SC2086" || findings[0].Start != (diagnostic.Position{Line: 6, Column: 19}) {
+	if len(findings) != 1 || findings[0].Code != "SC2086" || findings[0].Start != (sourcepos.Position{Line: 6, Column: 19}) {
 		t.Fatalf("remaining findings=%+v", findings)
 	}
 	for i, column := range []int{19, 22} {
 		edit := findings[0].Fixes[0].Edits[i]
-		if edit.Path != "workflow.yml" || edit.Start != (diagnostic.Position{Line: 6, Column: column}) || edit.End != edit.Start || edit.Replacement != `"` {
+		if edit.Path != "workflow.yml" || edit.Start != (sourcepos.Position{Line: 6, Column: column}) || edit.End != edit.Start || edit.Replacement != `"` {
 			t.Fatalf("remaining quote edit=%+v", edit)
 		}
 	}
@@ -117,20 +118,20 @@ func TestYAMLDirectivesBelongToEachInvokedDocument(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	result, err := analysis.Files(t.Context(), []string{filepath.Join(root, ".github", "workflows", "ci.yml")}, analysis.FileOptions{
-		WorkingDir: root, Analyzers: []analyzer.Registration{{Analyzer: component}},
+	result, err := checking.Check(t.Context(), checking.Options{Tools: pluginTools(),
+		WorkingDir: root, Analyzers: []checkinputs.Registration{{Checker: component}},
 		SkipProjectConfig: true,
-	})
+	}, inputmodel.Request{Kind: inputmodel.Files, Paths: []string{filepath.Join(root, ".github", "workflows", "ci.yml")}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	var findings []diagnostic.Diagnostic
+	var findings []results.Diagnostic
 	for _, finding := range result.Diagnostics {
 		if finding.Rule == "shellcheck" {
 			findings = append(findings, finding)
 		}
 	}
-	if len(findings) != 1 || findings[0].Code != "SC2086" || findings[0].Start != (diagnostic.Position{Line: 9, Column: 17}) {
+	if len(findings) != 1 || findings[0].Code != "SC2086" || findings[0].Start != (sourcepos.Position{Line: 9, Column: 17}) {
 		t.Fatalf("invoked findings=%+v", findings)
 	}
 	finding := findings[0]
@@ -142,7 +143,7 @@ func TestYAMLDirectivesBelongToEachInvokedDocument(t *testing.T) {
 	}
 	for i, column := range []int{17, 24} {
 		edit := finding.Fixes[0].Edits[i]
-		if edit.Path != filepath.Join(root, ".github", "actions", "example", "action.yml") || edit.Start != (diagnostic.Position{Line: 9, Column: column}) || edit.End != edit.Start || edit.Replacement != `"` {
+		if edit.Path != filepath.Join(root, ".github", "actions", "example", "action.yml") || edit.Start != (sourcepos.Position{Line: 9, Column: column}) || edit.End != edit.Start || edit.Replacement != `"` {
 			t.Fatalf("invoked quote edit=%+v", edit)
 		}
 	}
@@ -156,12 +157,12 @@ func TestYAMLDirectiveOnAliasKeepsAnchorFixes(t *testing.T) {
 		t.Fatalf("alias-specific directive scope=%+v", findings)
 	}
 	for _, finding := range findings {
-		if finding.Code != "SC2086" || finding.Start != (diagnostic.Position{Line: 6, Column: 27}) || len(finding.Fixes) != 1 || len(finding.Fixes[0].Edits) != 2 {
+		if finding.Code != "SC2086" || finding.Start != (sourcepos.Position{Line: 6, Column: 27}) || len(finding.Fixes) != 1 || len(finding.Fixes[0].Edits) != 2 {
 			t.Fatalf("alias finding=%+v", finding)
 		}
 		for i, column := range []int{27, 30} {
 			edit := finding.Fixes[0].Edits[i]
-			if edit.Start != (diagnostic.Position{Line: 6, Column: column}) || edit.End != edit.Start || edit.Path != "workflow.yml" {
+			if edit.Start != (sourcepos.Position{Line: 6, Column: column}) || edit.End != edit.Start || edit.Path != "workflow.yml" {
 				t.Fatalf("alias quote edit=%+v", edit)
 			}
 		}

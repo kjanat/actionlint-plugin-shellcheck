@@ -76,7 +76,7 @@ export async function verify({
 	run,
 	runResult,
 }: Context): Promise<{ checks: string[]; probe: string[] }> {
-	const probe = ['check', '--json', '--no-ruff', 'workflow.yml'];
+	const probe = ['check', '--json', '--no-tool', 'ruff', 'workflow.yml'];
 	const result = object(JSON.parse(await run(probe, 1)));
 	assert.equal(result.completed, true);
 	assert.equal(result.exit_code, 1);
@@ -99,12 +99,12 @@ export async function verify({
 		await writeFile(path, source);
 	}
 	const blocked = await runResult(
-		['check', '--no-ruff', '--output-file', path, '--yes', 'workflow.yml'],
+		['check', '--no-tool', 'ruff', '--output-file', path, '--yes', 'workflow.yml'],
 		3,
 	);
 	assert.match(blocked.stderr, /also an input/);
 	assert.equal(await readFile(path, 'utf8'), source);
-	const annotated = object(JSON.parse(await run(['check', '--json', '--no-ruff', 'directives.yml'], 1)));
+	const annotated = object(JSON.parse(await run(['check', '--json', '--no-tool', 'ruff', 'directives.yml'], 1)));
 	assert.equal(annotated.completed, true);
 	assert.equal(annotated.exit_code, 1);
 	assert.ok(Array.isArray(annotated.diagnostics));
@@ -128,7 +128,7 @@ export async function verify({
 		assert.equal(edit.replacement, '"');
 	}
 	assert.equal(await readFile(join(directory, 'directives.yml'), 'utf8'), directives);
-	const invalid = object(JSON.parse(await run(['check', '--json', '--no-ruff', 'invalid-directive.yml'], 1)));
+	const invalid = object(JSON.parse(await run(['check', '--json', '--no-tool', 'ruff', 'invalid-directive.yml'], 1)));
 	assert.equal(invalid.completed, true);
 	assert.equal(invalid.exit_code, 1);
 	assert.ok(Array.isArray(invalid.diagnostics));
