@@ -3,7 +3,7 @@
 
 [tools]
 "github:kjanat/runner"    = "0.28.0"
-"github:rvben/rumdl"      = "0.2.79"
+"github:rvben/rumdl"      = "0.3.2"
 "github:tombi-toml/tombi" = "1.8.4"
 deno                      = "2.9.7"
 go                        = "1.27.2"
