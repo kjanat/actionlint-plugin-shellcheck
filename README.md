@@ -18,7 +18,7 @@ actionlint check
 The registry installation selects this plugin as the ShellCheck backend.
 Its exported `kjanat:actionlint/tool-integration@0.2.0` interface identifies the managed tool role.
 It negotiates the versioned
-[`shellcheck-config@0.1.0` profile](vendor/actionlint-extension-api/schemas/shellcheck-config-0.1.0.md),
+[`shellcheck-config@0.1.0` profile](vendor/actionlint-extension-api/json/shellcheck-config-0.1.0.md),
 declining rc files, diagnostic ranges and `disable: [all]` so the host can select native execution.
 `--no-shellcheck` or `tools.shellcheck.enabled: false` disables ShellCheck analysis, including this plugin.
 Loading the artifact with `--plugin artifacts/plugin.wasm` discovers the same
@@ -101,11 +101,10 @@ its relative search candidates before falling back to an absolute source name.
 Requirements: the Rust toolchain in `rust-toolchain.toml` with the `wasm32-wasip2` target, which `rustup` installs
 on first use, and Go 1.27 for the host test.
 
-The vendored SDK is based on actionlint commit `8836017f3c5150fcd6eba7b4ae64658b2d5c53e1` and includes local contract
-updates. The Go host tests still pin the base commit and require an updated host for the revised contract. The
-[snapshot manifest](vendor/actionlint-extension-api.snapshot.json) records its
-source identity. Builds need no sibling actionlint checkout or module replacement.
-Keep the SDK's WIT, schemas and Rust bindings together when updating the snapshot.
+The vendored SDK and Go host tests use actionlint commit `99a250b29aaadfdb2d95a0c6ab954d3f9f11bdc8`.
+The SDK has no local changes. The [snapshot manifest](vendor/actionlint-extension-api.snapshot.json) records
+its source revision and file hashes. Builds need no sibling actionlint checkout or module replacement.
+Update the SDK's WIT, JSON profiles and Rust bindings together with the Go host dependency.
 
 ```sh
 cargo build --locked --release --lib --target wasm32-wasip2

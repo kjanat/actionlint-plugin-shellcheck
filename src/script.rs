@@ -1,4 +1,5 @@
-use crate::exports::kjanat::actionlint::analyzer::{Position, Script};
+use crate::exports::kjanat::actionlint::analyzer::Position;
+use crate::exports::kjanat::actionlint::analyzer::Script;
 use crate::kjanat::actionlint::prepared_scripts;
 
 pub struct Prepared {

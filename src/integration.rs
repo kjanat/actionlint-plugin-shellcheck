@@ -1,9 +1,12 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
-use crate::exports::kjanat::actionlint::tool_integration::{
-    Descriptor, Guest, Negotiated, ResourceRequest,
-};
-use crate::{Plugin, options};
+use crate::Plugin;
+use crate::exports::kjanat::actionlint::tool_integration::Descriptor;
+use crate::exports::kjanat::actionlint::tool_integration::Guest;
+use crate::exports::kjanat::actionlint::tool_integration::Negotiated;
+use crate::exports::kjanat::actionlint::tool_integration::ResourceRequest;
+use crate::options;
 
 #[derive(Default, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields, rename_all = "kebab-case")]
