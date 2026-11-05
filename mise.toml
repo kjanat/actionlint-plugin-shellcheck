@@ -6,7 +6,7 @@
 "github:rvben/rumdl"      = "0.2.79"
 "github:tombi-toml/tombi" = "1.8.4"
 deno                      = "2.9.7"
-go                        = "1.27.2"
+go                        = "1.27.3"
 golangci-lint             = "2.14.0"
 
 [tools."github:WebAssembly/binaryen"]
