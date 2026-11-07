@@ -218,7 +218,6 @@ func TestPackagedDeclarationMatchesRuntime(t *testing.T) {
 	}
 	type componentDeclaration struct {
 		rule.Descriptor
-		RequiredInputs []checkinputs.InputKind `json:"required_inputs"`
 	}
 	var declaration struct {
 		ID         string                `json:"id"`
@@ -239,7 +238,7 @@ func TestPackagedDeclarationMatchesRuntime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	actual, err := json.Marshal(componentDeclaration{Descriptor: descriptor.Descriptor, RequiredInputs: descriptor.RequiredInputs})
+	actual, err := json.Marshal(componentDeclaration{Descriptor: descriptor.Descriptor})
 	if err != nil {
 		t.Fatal(err)
 	}

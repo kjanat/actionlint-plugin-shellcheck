@@ -1,9 +1,9 @@
 use crate::exports::kjanat::actionlint::analyzer::Position;
 use crate::exports::kjanat::actionlint::analyzer::Script;
-use crate::kjanat::actionlint::prepared_scripts;
+use crate::kjanat::actionlint_script::shell_script_inputs;
 
 pub struct Prepared {
-    pub data: prepared_scripts::Prepared,
+    pub data: shell_script_inputs::Input,
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -12,28 +12,28 @@ pub fn request(script: &Script, dialect: Option<&str>) -> Result<Option<Prepared
         .occurrence
         .as_deref()
         .ok_or("script occurrence missing")?;
-    prepared_scripts::prepare(occurrence, dialect)
+    shell_script_inputs::for_script(occurrence, dialect)
         .map(|prepared| prepared.map(|data| Prepared { data }))
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 pub fn request(_: &Script, _: Option<&str>) -> Result<Option<Prepared>, String> {
-    Err("analysis requires the prepared-scripts host interface".to_string())
+    Err("analysis requires the shell-script-inputs host interface".to_string())
 }
 
 impl Prepared {
-    fn line(&self, line: i64) -> Option<&prepared_scripts::Line> {
+    fn line(&self, line: i64) -> Option<&shell_script_inputs::Line> {
         usize::try_from(line.checked_sub(1)?)
             .ok()
             .and_then(|index| self.data.lines.get(index))
     }
 
     pub fn is_startup(&self, line: i64) -> bool {
-        matches!(self.line(line), Some(prepared_scripts::Line::Startup))
+        matches!(self.line(line), Some(shell_script_inputs::Line::Generated))
     }
 
     pub fn comment_position(&self, line: i64, column: i64) -> Option<Position> {
-        let prepared_scripts::Line::Comment(start) = self.line(line)? else {
+        let shell_script_inputs::Line::Comment(start) = self.line(line)? else {
             return None;
         };
         Some(Position {
@@ -47,13 +47,13 @@ impl Prepared {
     pub fn original_line(&self, line: i64) -> u32 {
         if usize::try_from(line).ok() == self.data.lines.len().checked_add(1) {
             for source in self.data.lines.iter().rev() {
-                if let prepared_scripts::Line::Script(source) = source {
+                if let shell_script_inputs::Line::Source(source) = source {
                     return source.saturating_add(1);
                 }
             }
         }
         match self.line(line) {
-            Some(prepared_scripts::Line::Script(source)) => *source,
+            Some(shell_script_inputs::Line::Source(source)) => *source,
             _ => 0,
         }
     }

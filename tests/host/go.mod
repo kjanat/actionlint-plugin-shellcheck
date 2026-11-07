@@ -5,7 +5,7 @@ go 1.27.0
 toolchain go1.27.3
 
 require (
-	actionlint.kjanat.dev/v2 v2.0.0-20261105171632-99a250b29aaa
+	actionlint.kjanat.dev/v2 v2.0.0-20261106234842-70c824363f30
 	github.com/kjanat/wacogo v0.2.3
 )
 

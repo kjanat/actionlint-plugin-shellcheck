@@ -29,16 +29,17 @@ requires explicit caller-supplied grants.
 Each finding carries the ShellCheck code as `code`, the ShellCheck level as `severity`, the plain ShellCheck message
 and, when ShellCheck offers one, a fix with edits
 mapped into the workflow file. Findings in composite action scripts point at the action file.
-Findings remain available when another script or the engine's dataflow analysis cannot complete;
+Findings are returned even when another script or the engine's dataflow analysis cannot complete;
 the host also receives an explicit incomplete-analysis error.
 
-The required `kjanat:actionlint/prepared-scripts@0.2.0` host import supplies
+The required `kjanat:actionlint-script/shell-script-inputs@0.3.0` host import supplies
 native ShellCheck's preparation: the resolved runner shell, a
 `# shellcheck shell=` directive at the top of the script, and the runner's startup options such as `set -e -o pipefail`
 for an explicit `bash`. Without a shell directive, steps whose shell is unknown, `pwsh`, `python` or a custom template
-that hides the script are skipped. `${{ }}` expressions are masked before analysis, and SC1091, SC2194, SC2050, SC2153,
-SC2154, SC2157 and
-SC2043 are excluded for the same reasons the built-in rule excludes them.
+that hides the script are skipped. `${{ }}` expressions are masked before analysis.
+The host adds environment-name declarations without their values, preserving each exported spelling.
+SC2153 and SC2154 check those names unless unresolved declarations prevent the host from determining them.
+The default exclusions are SC1091, SC2194, SC2050, SC2157 and SC2043.
 
 ShellCheck directives attached as YAML comments apply to that script:
 
@@ -85,7 +86,7 @@ directives into those grants, records actual reads and keeps file snapshots for
 the duration of the call. Clean and transitively sourced files are dependencies
 even when they emit no findings. ShellCheck directives cannot expand the host's
 grants. Mount translations come from `kjanat:actionlint/source-files@0.2.0`,
-never from plugin options. This import, `source-annotations` and `prepared-scripts` are required
+never from plugin options. This import, `source-annotations` and `shell-script-inputs` are required
 by the component. Rc files still require the native adapter.
 Plugin options can narrow these grants; they cannot enable disabled host access
 or add directories outside the workspace. Direct paths and symlinks that escape
@@ -101,7 +102,7 @@ its relative search candidates before falling back to an absolute source name.
 Requirements: the Rust toolchain in `rust-toolchain.toml` with the `wasm32-wasip2` target, which `rustup` installs
 on first use, and Go 1.27 for the host test.
 
-The vendored SDK and Go host tests use actionlint commit `99a250b29aaadfdb2d95a0c6ab954d3f9f11bdc8`.
+The vendored SDK and Go host tests use actionlint commit `70c824363f307a5097e73531d18d00189cca6fe8`.
 The SDK has no local changes. The [snapshot manifest](vendor/actionlint-extension-api.snapshot.json) records
 its source revision and file hashes. Builds need no sibling actionlint checkout or module replacement.
 Update the SDK's WIT, JSON profiles and Rust bindings together with the Go host dependency.

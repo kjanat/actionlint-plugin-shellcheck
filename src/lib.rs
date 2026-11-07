@@ -164,8 +164,8 @@ fn analyze_prepared(script: &Script, options: &Options, prepared: &script::Prepa
     map_result(
         script,
         prepared,
-        &prepared.data.sanitized,
-        &prepared.data.startup,
+        &prepared.data.masked_text,
+        &prepared.data.shell_setup,
         &prepared.data.shell,
         result,
     )
