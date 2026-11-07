@@ -345,7 +345,7 @@ dependencies = [
 [[package]]
 name = "shellcheck-rs"
 version = "1.0.0"
-source = "git+https://github.com/kjanat/shellcheck-rs?rev=0b64935439ae0d02390c7bd68392373471de6a84#0b64935439ae0d02390c7bd68392373471de6a84"
+source = "git+https://github.com/kjanat/shellcheck-rs?rev=54aa1fc79439f5dbe61695044dde1cd181d5fec4#54aa1fc79439f5dbe61695044dde1cd181d5fec4"
 dependencies = [
  "im-rc",
  "regex",
