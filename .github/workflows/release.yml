@@ -44,7 +44,7 @@ jobs:
         run: chmod +x "${RUNNER_TEMP}/actionlint"
       - name: Publish the tested candidate and verify delivery
         id: publish
-        uses: kjanat/actionlint-registry/publish@85bef8a6fba197f0e8933bdd812db19885b06527
+        uses: kjanat/actionlint-registry/publish@f188a50dc2af9282a4d8de644cc90dbcfdb5443b
         with:
           sha256: ${{ needs.build.outputs.sha256 }}
           candidate-receipt: candidate.json

@@ -1,120 +1,135 @@
 {
-	"repository": "https://github.com/kjanat/actionlint",
-	"revision": "99a250b29aaadfdb2d95a0c6ab954d3f9f11bdc8",
-	"path": "plugins/sdk/rust",
-	"tree": "fc569c662c50c55ede895969217a8b88c8d46586",
-	"files": [
-		{
-			"path": "CONTRIBUTING.md",
-			"blob": "dfe1eadd1ed3ad9766add9202eec4281c8254368",
-			"sha256": "887e854cdf37bcd4ccb7ead296a453e6c379225003bb7ad2a54499a30759a627"
-		},
-		{
-			"path": "Cargo.toml",
-			"blob": "09d1ba74bc1dedd51c4bc0294a5931fdafb058a7",
-			"sha256": "13cc36c3bc05411fed62313544a56dd2c307282066fa006699b0d1e665f2f669"
-		},
-		{
-			"path": "LICENSE.txt",
-			"blob": "bd45857b45a9391b6e4d8103cd67f520b355fd6b",
-			"sha256": "6984e3a43fa8ee8a6ce8ca7fdad391e58dc847639a147d1ea77c5a2d81f3533f"
-		},
-		{
-			"path": "README.md",
-			"blob": "6334144eb38f85600d88f90a7e6a0e4aa2534236",
-			"sha256": "b73fb508d9b61dfc015ebff166c602cc1a7e1e36733cdcd3ff2ad849200b0075"
-		},
-		{
-			"path": "build.rs",
-			"blob": "6d3b11dc16a77d2e4b34c73b81e9ab8a42e09c08",
-			"sha256": "e00b2704b32ad739045d4dbf394301e01bfa5b9c52695c97395e579d51d69c03"
-		},
-		{
-			"path": "json/shell-preparation-0.1.0.md",
-			"blob": "6eb51309628c7125f6d6b809b9fb48eb64aab8b3",
-			"sha256": "f28e6a10123e088dcd71d483465f88f989a8f3c4db7990240bb82020c0d8d3b2"
-		},
-		{
-			"path": "json/shell-preparation-0.2.0.md",
-			"blob": "1de6b86aeb4518f98be552d03af5b30a761e710f",
-			"sha256": "371dae0697f74e6b4447e3caa54d6b61ca0d8d88fcebb45d4049985033fed3a6"
-		},
-		{
-			"path": "json/shellcheck-config-0.1.0.json",
-			"blob": "9bea2bb26da5c7bd3138770b2014d70991d1b2ea",
-			"sha256": "5a373f64fd0b0aa731ccff6b4b15a8e3a8f141a2491027eab280e244cdc7d9d8"
-		},
-		{
-			"path": "json/shellcheck-config-0.1.0.md",
-			"blob": "173ae46f085f950735f2945a5f68386388a2f7e2",
-			"sha256": "e8cfb3a2985ac499079973c28e359524d677bc012fed98e30b0cf5f6e5d7023e"
-		},
-		{
-			"path": "src/lib.rs",
-			"blob": "34116d71ea9148dfbc7f85b4078a4f018de3bc75",
-			"sha256": "e214e86201d430123db82b122ec83911b79967f264eaebc7aad949707fd58ba1"
-		},
-		{
-			"path": "src/package.rs",
-			"blob": "f5a1bde2571e3e2ff7176e3bfdc53c4b30985cfd",
-			"sha256": "d15fd8b257889c67aa9f6bb514304bc8ad00c51ac3bfe22783eaf32fa73217ac"
-		},
-		{
-			"path": "wit/0.3.0/script-engine.wit",
-			"blob": "87269eb0878ed9b17335f0c0f9f41c49524b09dd",
-			"sha256": "6c289637bd345bd66db965fe9084fb8e5a4f03b0d5655497025e2d1a05c36479"
-		},
-		{
-			"path": "wit/0.3.0/template-effects.wit",
-			"blob": "d6df0460f3cd11db089b2797e4b6171cfe457d44",
-			"sha256": "29c7fbd8a5779e38d1d542d1cc4ba90b0c264ef7bc6b35f8bcefc778a075c789"
-		},
-		{
-			"path": "wit/analyzer.wit",
-			"blob": "d1879c4e67707b1e68aefb1648bffdef08e86435",
-			"sha256": "287f569cb6587a23f2195f9d8398f370c32a2b21deed1fac42f3b56fd03c7c23"
-		},
-		{
-			"path": "wit/core-json-abi.md",
-			"blob": "422f01e75e6693fde85232c3cf98fdd0a065b9f5",
-			"sha256": "e92aeb79fefa8fdff0c4c19a4b3b218f22665d556387fd89049cdef11fc00aa8"
-		},
-		{
-			"path": "wit/prepared-scripts.wit",
-			"blob": "eeca57caf95dcccfba96335147055b57ed01e62a",
-			"sha256": "f78e545187fad3c0e7fff282d85521bc18864e3af39ec683b9cb71af028b3797"
-		},
-		{
-			"path": "wit/runner.wit",
-			"blob": "590e1fbf3cfa8e126da71c8f9984dc89a2c10130",
-			"sha256": "2a995ebe267d4d5df5664c0f6f48b40cc770116ef9375935f26f3a648652df9f"
-		},
-		{
-			"path": "wit/script-engine.wit",
-			"blob": "c57412bbb795c4ca988a5be47115423596327c63",
-			"sha256": "c20d7e9e516166576fdf19bfd86e0843838179b12ad55350c33db8d04c2eaa9b"
-		},
-		{
-			"path": "wit/source-annotations.wit",
-			"blob": "9a7403f13070b7de96a350b6430fa0f15ad4d1c6",
-			"sha256": "d52556e695537a59b7e50fea4a3c6686fc95e2eae31dbe33f43648f4ce1d0269"
-		},
-		{
-			"path": "wit/source-files.wit",
-			"blob": "b06cc1fadacc38733be267459ffc07036b86ae20",
-			"sha256": "f0a6643b2ad6718e976ba6d2a25e29f24f479a7389f69646aeac8cbffaa650b3"
-		},
-		{
-			"path": "wit/template-effects.wit",
-			"blob": "a6ca8255a0244600a5998b7892a2f7a42d3921a1",
-			"sha256": "90722c112a92ba8e098609c2bf11170892504477d5526f62ae7f3a4cdf270fba"
-		},
-		{
-			"path": "wit/tool-integration.wit",
-			"blob": "a6271fbb5882a545c9232f8ae4dbf410cbabfcf0",
-			"sha256": "08fd146bce1b1fcebccf01d2de1a785776bda122c8245befe21d0d901f8de9ea"
-		}
-	],
-	"normalizations": [],
-	"local_changes": []
+  "repository": "https://github.com/kjanat/actionlint",
+  "revision": "70c824363f307a5097e73531d18d00189cca6fe8",
+  "path": "plugins/sdk/rust",
+  "tree": "d254e2b8c8a16fcd44a3dee727ee3402ff2f3f76",
+  "files": [
+    {
+      "path": "CONTRIBUTING.md",
+      "blob": "dfe1eadd1ed3ad9766add9202eec4281c8254368",
+      "sha256": "887e854cdf37bcd4ccb7ead296a453e6c379225003bb7ad2a54499a30759a627"
+    },
+    {
+      "path": "Cargo.toml",
+      "blob": "7e42ff4d934e678bc23eb46041ec6f5ff148c43f",
+      "sha256": "fb8fc1a86e191d2196ed9ebe9a880d97b88b74ec1b1da770e819e40ec68f26c7"
+    },
+    {
+      "path": "LICENSE.txt",
+      "blob": "bd45857b45a9391b6e4d8103cd67f520b355fd6b",
+      "sha256": "6984e3a43fa8ee8a6ce8ca7fdad391e58dc847639a147d1ea77c5a2d81f3533f"
+    },
+    {
+      "path": "README.md",
+      "blob": "ddc8a38f8b98775c8866fa77a4a04d5f7b75653e",
+      "sha256": "7dbd7086b116eebee9ec578bf6693674aaf406225b85ff0703b6df8344b4a6e7"
+    },
+    {
+      "path": "build.rs",
+      "blob": "941acc66bb56987640abb1242f94641623eb16a2",
+      "sha256": "6b367068d01cc9c49b6a77bbb1ddc0203a7b83b1be9f6fa112233dd7e60f3614"
+    },
+    {
+      "path": "json/shell-preparation-0.1.0.md",
+      "blob": "6eb51309628c7125f6d6b809b9fb48eb64aab8b3",
+      "sha256": "f28e6a10123e088dcd71d483465f88f989a8f3c4db7990240bb82020c0d8d3b2"
+    },
+    {
+      "path": "json/shell-preparation-0.2.0.md",
+      "blob": "1de6b86aeb4518f98be552d03af5b30a761e710f",
+      "sha256": "371dae0697f74e6b4447e3caa54d6b61ca0d8d88fcebb45d4049985033fed3a6"
+    },
+    {
+      "path": "json/shell-preparation-0.3.0.md",
+      "blob": "0302cfd949f4716f979efdfa60aaec03d8c0df83",
+      "sha256": "9386c0b17c8454382d8d67dac329e1d1f04ac00770f6bf06b734a8e80a099cd1"
+    },
+    {
+      "path": "json/shellcheck-config-0.1.0.json",
+      "blob": "9bea2bb26da5c7bd3138770b2014d70991d1b2ea",
+      "sha256": "5a373f64fd0b0aa731ccff6b4b15a8e3a8f141a2491027eab280e244cdc7d9d8"
+    },
+    {
+      "path": "json/shellcheck-config-0.1.0.md",
+      "blob": "173ae46f085f950735f2945a5f68386388a2f7e2",
+      "sha256": "e8cfb3a2985ac499079973c28e359524d677bc012fed98e30b0cf5f6e5d7023e"
+    },
+    {
+      "path": "src/lib.rs",
+      "blob": "ad72ffb0021a14400b38b6c60c10e64807a51b79",
+      "sha256": "6c0d3fdbe1ea90aea789cba486eb4e486683275ee634766e15d36ee2534a63f4"
+    },
+    {
+      "path": "src/package.rs",
+      "blob": "756ea0c1612eab615ae7634db1bbb504d1dd9fe9",
+      "sha256": "abc9513d321d85d7f0a1d44db3156741e460347983ed10e5c98feb005cbbd25c"
+    },
+    {
+      "path": "wit/analyzer.wit",
+      "blob": "d1879c4e67707b1e68aefb1648bffdef08e86435",
+      "sha256": "287f569cb6587a23f2195f9d8398f370c32a2b21deed1fac42f3b56fd03c7c23"
+    },
+    {
+      "path": "wit/core-json-abi.md",
+      "blob": "422f01e75e6693fde85232c3cf98fdd0a065b9f5",
+      "sha256": "e92aeb79fefa8fdff0c4c19a4b3b218f22665d556387fd89049cdef11fc00aa8"
+    },
+    {
+      "path": "wit/deps/actionlint-0.3.0/script-engine.wit",
+      "blob": "87269eb0878ed9b17335f0c0f9f41c49524b09dd",
+      "sha256": "6c289637bd345bd66db965fe9084fb8e5a4f03b0d5655497025e2d1a05c36479"
+    },
+    {
+      "path": "wit/deps/actionlint-0.3.0/template-effects.wit",
+      "blob": "d6df0460f3cd11db089b2797e4b6171cfe457d44",
+      "sha256": "29c7fbd8a5779e38d1d542d1cc4ba90b0c264ef7bc6b35f8bcefc778a075c789"
+    },
+    {
+      "path": "wit/deps/actionlint-script/environments.wit",
+      "blob": "19ad60ed2eed0baa1dd4db46056401554bef2614",
+      "sha256": "d6c48faec294d3a4b1fb6c20e686991106ee532a3f7e29dfd68961218a270a2b"
+    },
+    {
+      "path": "wit/deps/actionlint-script/shell-script-inputs.wit",
+      "blob": "8dd1c9e4d7452a951296b38c7fc5e4be6a3aa9ca",
+      "sha256": "bd5a7e7aea544881dbc07f0ff6f7144739d4563513fcc1ea8ffb3cd67ad25867"
+    },
+    {
+      "path": "wit/environment-worlds.wit",
+      "blob": "8a66ee01022e6b33325944d339631547a7ae8e68",
+      "sha256": "5a0624826bf626a2188a64e7d2a37364bb2085acd250ccb494e25d7e0b3a0dbe"
+    },
+    {
+      "path": "wit/runner.wit",
+      "blob": "590e1fbf3cfa8e126da71c8f9984dc89a2c10130",
+      "sha256": "2a995ebe267d4d5df5664c0f6f48b40cc770116ef9375935f26f3a648652df9f"
+    },
+    {
+      "path": "wit/script-engine.wit",
+      "blob": "c57412bbb795c4ca988a5be47115423596327c63",
+      "sha256": "c20d7e9e516166576fdf19bfd86e0843838179b12ad55350c33db8d04c2eaa9b"
+    },
+    {
+      "path": "wit/source-annotations.wit",
+      "blob": "9a7403f13070b7de96a350b6430fa0f15ad4d1c6",
+      "sha256": "d52556e695537a59b7e50fea4a3c6686fc95e2eae31dbe33f43648f4ce1d0269"
+    },
+    {
+      "path": "wit/source-files.wit",
+      "blob": "8410ade1a655a4f943f13c6e2f994529fb178d8b",
+      "sha256": "b724a971716af91ad0d5b4b620b89d3c1e441b6128b95865b4cc0415cae08bf4"
+    },
+    {
+      "path": "wit/template-effects.wit",
+      "blob": "a6ca8255a0244600a5998b7892a2f7a42d3921a1",
+      "sha256": "90722c112a92ba8e098609c2bf11170892504477d5526f62ae7f3a4cdf270fba"
+    },
+    {
+      "path": "wit/tool-integration.wit",
+      "blob": "a6271fbb5882a545c9232f8ae4dbf410cbabfcf0",
+      "sha256": "08fd146bce1b1fcebccf01d2de1a785776bda122c8245befe21d0d901f8de9ea"
+    }
+  ],
+  "normalizations": [],
+  "local_changes": []
 }

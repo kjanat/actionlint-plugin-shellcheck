@@ -10,6 +10,7 @@ import (
 	"testing/fstest"
 
 	"actionlint.kjanat.dev/v2/internal/checking/executor"
+	rule "actionlint.kjanat.dev/v2/internal/checking/rules"
 	scriptmodel "actionlint.kjanat.dev/v2/internal/model/scripts"
 
 	checkinputs "actionlint.kjanat.dev/v2/internal/checking/inputs"
@@ -67,15 +68,15 @@ func analyzeSources(t *testing.T, component checkinputs.Checker, input checkinpu
 		t.Fatal(err)
 	}
 	input.Reference, input.CallGraph = sourceDocument, graph
-	input.AvailableInputs = []checkinputs.InputKind{checkinputs.Scripts, checkinputs.Invocations, checkinputs.Execution}
-	input.PrepareScript = func(_ context.Context, occurrence checkinputs.OccurrenceID, _ *string) (*checkinputs.PreparedScript, error) {
+	input.AvailableInputs = []rule.InputKind{rule.Scripts, rule.Invocations, rule.Execution}
+	input.BuildShellScriptInput = func(_ context.Context, occurrence checkinputs.OccurrenceID, _ *string) (*checkinputs.ShellScriptInput, error) {
 		if occurrence != script.Occurrence.ID {
 			t.Fatalf("unexpected script occurrence: %v", occurrence)
 		}
 		dialect := "bash"
-		prepared := &checkinputs.PreparedScript{Text: script.Text, Sanitized: script.Text, Dialect: &dialect, Shell: "bash", Excluded: []uint32{1091}}
+		prepared := &checkinputs.ShellScriptInput{Text: script.Text, MaskedText: script.Text, Dialect: &dialect, Shell: "bash", Excluded: []uint32{1091}}
 		for index := range strings.Split(script.Text, "\n") {
-			prepared.Lines = append(prepared.Lines, checkinputs.PreparedLine{Kind: checkinputs.PreparedScriptLine, Line: index + 1})
+			prepared.Lines = append(prepared.Lines, checkinputs.ShellScriptLine{Kind: checkinputs.ShellScriptSourceLine, Line: index + 1})
 		}
 		return prepared, nil
 	}

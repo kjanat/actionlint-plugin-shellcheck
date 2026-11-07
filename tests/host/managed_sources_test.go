@@ -49,7 +49,7 @@ func TestManagedSourceGrantsThroughCLI(t *testing.T) {
 		ID        string `json:"id"`
 		Version   string `json:"plugin_version"`
 		Interface string `json:"interface"`
-		Contract  string `json:"contract_sha256"`
+		WITSHA256 string `json:"wit_sha256"`
 	}
 	if err := json.Unmarshal(inspected.Info.Metadata, &metadata); err != nil {
 		t.Fatal(err)
@@ -64,7 +64,7 @@ func TestManagedSourceGrantsThroughCLI(t *testing.T) {
 		"repository_id": "1", "owner_id": "1", "plugin_id": metadata.ID,
 		"selector": version, "version": version, "kind": "component", "asset": "plugin.wasm",
 		"url":    "https://" + repository + "/releases/download/" + version + "/plugin.wasm",
-		"sha256": inspected.Info.SHA256, "contract": metadata.Interface + "#sha256=" + metadata.Contract,
+		"sha256": inspected.Info.SHA256, "contract": metadata.Interface + "#sha256=" + metadata.WITSHA256,
 	}}})
 	if err != nil {
 		t.Fatal(err)

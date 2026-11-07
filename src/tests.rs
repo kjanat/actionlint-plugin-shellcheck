@@ -1,8 +1,8 @@
 use super::*;
 use exports::kjanat::actionlint::analyzer::SourceReference;
 use exports::kjanat::actionlint::analyzer::Span;
-use kjanat::actionlint::prepared_scripts::Line;
-use kjanat::actionlint::prepared_scripts::Prepared;
+use kjanat::actionlint_script::shell_script_inputs::Input;
+use kjanat::actionlint_script::shell_script_inputs::Line;
 
 fn script(text: &str) -> Script {
     Script {
@@ -38,19 +38,19 @@ fn script(text: &str) -> Script {
 
 fn prepared() -> script::Prepared {
     script::Prepared {
-        data: Prepared {
+        data: Input {
             text: "# shellcheck disable=SC2034\nset -e\necho $x\n".into(),
-            sanitized: "echo $x".into(),
+            masked_text: "echo $x".into(),
             dialect: Some("bash".into()),
             shell: "bash".into(),
-            startup: "set -e".into(),
+            shell_setup: "set -e".into(),
             lines: vec![
-                Line::Comment(kjanat::actionlint::source_annotations::Position {
+                Line::Comment(kjanat::actionlint_script::shell_script_inputs::Position {
                     line: 6,
                     column: 9,
                 }),
-                Line::Startup,
-                Line::Script(1),
+                Line::Generated,
+                Line::Source(1),
             ],
             excluded: vec![2154],
         },
@@ -126,8 +126,8 @@ fn incomplete_engine_result_keeps_findings() {
     let outcome = map_result(
         &source,
         &prepared,
-        &prepared.data.sanitized,
-        &prepared.data.startup,
+        &prepared.data.masked_text,
+        &prepared.data.shell_setup,
         &prepared.data.shell,
         result,
     );
@@ -149,5 +149,10 @@ fn incomplete_engine_result_keeps_findings() {
 fn missing_host_preparation_is_an_explicit_failure() {
     let outcome = analyze_script(&script("echo $x"), &Options::parse("").expect("options"));
     assert!(outcome.diagnostics.is_empty());
-    assert!(outcome.error.expect("failure").contains("prepared-scripts"));
+    assert!(
+        outcome
+            .error
+            .expect("failure")
+            .contains("shell-script-inputs")
+    );
 }
