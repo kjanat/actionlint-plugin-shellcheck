@@ -78,7 +78,7 @@ func analyze(t *testing.T, options string) []results.Diagnostic {
 	return findings
 }
 
-// A component can compile successfully while its host adapter drops findings or
+// A component can compile while its host adapter drops findings or
 // shifts their locations. This loads the packaged Wasm through the host component loader,
 // analyzes Bash and sh steps, and checks their diagnostics and quote edits. The
 // PowerShell step also catches accidental shell analysis of another language.
@@ -120,7 +120,7 @@ func TestPluginOptionsDisableCodes(t *testing.T) {
 // Misspelled settings must produce a useful error for both supported call paths.
 // This submits an unknown key through the host's schema validation and directly
 // to the component host, checking that each names the bad key. Otherwise one caller
-// could silently ignore a setting that another caller correctly rejects.
+// could ignore a setting that another caller rejects.
 func TestPluginRejectsUnknownOptions(t *testing.T) {
 	ctx := context.Background()
 	component := load(t)

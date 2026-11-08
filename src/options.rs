@@ -143,10 +143,8 @@ mod tests {
     use super::parse_code;
     use rshellcheck_core::Severity;
 
-    // A plugin installation without an options object must remain usable. The
-    // empty-string input takes a separate path from JSON deserialization, so this
-    // checks that it neither forces a dialect nor suppresses diagnostics and that
-    // the default severity includes style findings rather than silently hiding them.
+    // Empty input takes a separate path from JSON deserialization. Check that it
+    // leaves the dialect unspecified and includes style findings by default.
     #[test]
     fn empty_options_are_defaults() {
         let options = Options::parse("").unwrap_or_else(|error| panic!("{error}"));
@@ -159,10 +157,9 @@ mod tests {
         assert!(matches!(options.severity, Severity::StyleC));
     }
 
-    // Configuration mistakes should fail at the plugin boundary with the offending
-    // field identified, rather than silently changing analysis. This exercises
-    // conversions and malformed dialect, exclusion, optional-check and severity
-    // values, including numeric diagnostic exclusions versus named optional checks.
+    // Invalid configuration must identify the offending field. Check malformed
+    // dialect, exclusion, optional-check and severity values, including numeric
+    // diagnostic exclusions and named optional checks.
     #[test]
     fn options_are_validated() {
         let options = Options::parse(r#"{"shell": "dash", "disable": ["SC2086", "2034"], "enable": ["avoid-nullary-conditions"], "extended-analysis": false, "severity": "warning"}"#)
@@ -189,10 +186,8 @@ mod tests {
         assert_eq!(parse_code("SC"), None);
     }
 
-    // Editors use the published schema while the guest validates options at
-    // runtime. Any disagreement makes suggested settings unusable. This checks every
-    // engine-provided optional-check name in the generated schema and then submits
-    // that catalogue to the parser, covering their shared public configuration surface.
+    // Editors use the published schema and the guest validates options at runtime.
+    // Check every engine-provided optional-check name in both the schema and parser.
     #[test]
     fn schema_and_validation_use_the_engine_catalogue() {
         let schema = super::schema();

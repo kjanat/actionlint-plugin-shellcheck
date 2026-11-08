@@ -1,7 +1,7 @@
 # actionlint-plugin-shellcheck
 
-ShellCheck for the `run:` steps actionlint analyzes, as a WebAssembly component built on
-[rshellcheck](https://github.com/kjanat/shellcheck-rs). The component implements
+This WebAssembly component uses [rshellcheck](https://github.com/kjanat/shellcheck-rs) to run ShellCheck
+on the `run:` steps actionlint analyzes. The component implements
 `kjanat:actionlint/analyzer@0.2.0` through
 [`actionlint-extension-api`](vendor/actionlint-extension-api/README.md).
 Its analyzer declares the `shellcheck` rule directly. The engine provider is `rshellcheck`.
@@ -18,8 +18,8 @@ actionlint check
 The registry installation selects this plugin as the ShellCheck backend.
 Its exported `kjanat:actionlint/tool-integration@0.2.0` interface identifies the managed tool role.
 It negotiates the versioned
-[`shellcheck-config@0.1.0` profile](vendor/actionlint-extension-api/json/shellcheck-config-0.1.0.md),
-declining rc files, diagnostic ranges and `disable: [all]` so the host can select native execution.
+[`shellcheck-config@0.1.0` profile](vendor/actionlint-extension-api/json/shellcheck-config-0.1.0.md).
+It declines rc files, diagnostic ranges and `disable: [all]` so the host can select native execution.
 `--no-shellcheck` or `tools.shellcheck.enabled: false` disables ShellCheck analysis, including this plugin.
 Loading the artifact with `--plugin artifacts/plugin.wasm` discovers the same
 tool-integration declaration and negotiates the same host tool configuration.
@@ -35,8 +35,9 @@ The host then also receives an explicit incomplete-analysis error.
 The required `kjanat:actionlint-script/shell-script-inputs@0.3.0` host import supplies
 native ShellCheck's preparation: the resolved runner shell, a
 `# shellcheck shell=` directive at the top of the script, and the runner's startup options such as `set -e -o pipefail`
-for an explicit `bash`. Without a shell directive, steps whose shell is unknown, `pwsh`, `python` or a custom template
-that hides the script are skipped. `${{ }}` expressions are masked before analysis.
+for an explicit `bash`. Without a shell directive, the plugin skips steps whose shell is unknown, `pwsh`, `python` or a
+custom template
+that hides the script. `${{ }}` expressions are masked before analysis.
 The host adds environment-name declarations without their values, preserving each exported spelling.
 SC2153 and SC2154 check those names unless unresolved declarations prevent the host from determining them.
 The default exclusions are SC1091, SC2194, SC2050, SC2157 and SC2043.
@@ -75,8 +76,9 @@ The host passes a JSON object. Every key is optional.
 Unknown keys and invalid values fail analysis. The error names the key.
 The rule exposes a generated options schema for editor/tool discovery, also packaged as `artifacts/schema.json`.
 An explicit dialect option does not turn an unknown or unsupported runtime shell into a shell script.
-`disable` identifies emitted diagnostics by number. `enable` selects optional analysis passes by name. Unknown
-optional-check names, misspellings and numeric enable selectors are rejected. Both schema and validation use
+`disable` identifies emitted diagnostics by number. `enable` selects optional analysis passes by name. The plugin
+rejects unknown
+optional-check names, misspellings and numeric enable selectors. Both schema and validation use
 rshellcheck's typed optional-check catalogue. Neither parses CLI output or keeps a copied catalogue.
 
 For the managed plugin, `tools.shellcheck.config.external-sources: true` grants
@@ -122,7 +124,7 @@ declaration share rule metadata. The component uses the analyzer ABI.
 The SDK owns guest bindings, the component export macro and native packaging. This plugin supplies its
 descriptor, Cargo identity, engine, capabilities and license. Its `source-annotations` feature imports
 attached YAML comments from compatible hosts. The original analyzer interface remains unchanged.
-The full structural interface is checked when loading.
+The host checks the full structural interface when it loads the component.
 
 ## Release
 
@@ -144,8 +146,8 @@ different bytes. An interrupted draft can resume missing uploads. Published rele
 Registry acceptance is asynchronous. The workflow polls for up to 30 minutes and succeeds only on `published`.
 Any other outcome fails the workflow, including `pending`, `validating`, rejection, failure and timeout. The retained
 `registry-publication-receipt` artifact records the submission ID, tested digest, status URL and last response.
-After a timeout or recoverable registry failure, inspect that URL and rerun the tag workflow (or dispatch Release
-with the existing tag selected). An identical resubmission preserves the registry identity. Branch dispatches
+After a timeout or recoverable registry failure, inspect that URL and rerun the tag workflow. You can also dispatch
+Release with the existing tag selected. An identical resubmission preserves the registry identity. Branch dispatches
 cannot publish: registry OIDC authorization requires the workflow itself to run from the submitted tag.
 
 After publication, the shared action installs the exact candidate version and digest from the production registry
@@ -162,7 +164,7 @@ go -C tests/host test -mod=readonly ./...
 ```
 
 Build and package before running the Go tests. They inspect the packaged metadata without executing it, then load
-the same component through actionlint's private host packages, checking positions, fixes, option errors, descriptor
+the same component through actionlint's private host packages. They check positions, fixes, option errors, descriptor
 parity and package checksums. `ACTIONLINT_PLUGIN_SHELLCHECK` selects another packaged component with its sidecars.
 The unpublished host-test module uses the actionlint module prefix to access those private packages and pins
 the published host revision. The distributed component depends on the guest contract, not the host's Go API.
