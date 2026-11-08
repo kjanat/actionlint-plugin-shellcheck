@@ -75,7 +75,7 @@ pub fn descriptor() -> Descriptor {
         recommended: true,
         explanation: concat!(
             "Run rshellcheck on supported shell scripts. ",
-            "The host must grant read-only access to source files. The plugin does not read rc files. Review fixes before applying them."
+            "Following source files requires read-only host grants. The plugin does not read rc files. Review fixes before applying them."
         )
         .to_string(),
         help: concat!(

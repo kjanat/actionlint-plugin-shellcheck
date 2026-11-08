@@ -19,7 +19,9 @@ configurations requiring rc files, diagnostic ranges or `disable: [all]`, allowi
 backend. Disable ShellCheck with `--no-shellcheck` or `tools.shellcheck.enabled: false`.
 
 You can also load `artifacts/plugin.wasm` with `--plugin`. The host discovers the same tool integration and negotiates
-the same configuration. Direct analyzer callers may pass plugin options, but must grant filesystem access separately.
+the same configuration. Direct analyzer callers may pass plugin options. To follow source files, they must also grant
+read-only filesystem access.
+No source-file access is needed when `external-sources` is false, the default.
 
 ## Analysis
 
