@@ -179,11 +179,11 @@ func (a *rawFixAnalyzer) CheckDocument(ctx context.Context, input checkinputs.In
 		for _, fix := range finding.Fixes {
 			a.inspected = true
 			if len(fix.Revisions) != 1 || fix.Revisions[input.Path] != input.Reference.Revision {
-				return nil, fmt.Errorf("raw fix revisions %v; expected path %q revision %q", fix.Revisions, input.Path, input.Reference.Revision)
+				return nil, fmt.Errorf("raw fix revisions = %v, want path %q revision %q", fix.Revisions, input.Path, input.Reference.Revision)
 			}
 			for _, edit := range fix.Edits {
 				if edit.Path != input.Path {
-					return nil, fmt.Errorf("raw edit path %q; expected %q", edit.Path, input.Path)
+					return nil, fmt.Errorf("raw edit path = %q, want %q", edit.Path, input.Path)
 				}
 			}
 		}

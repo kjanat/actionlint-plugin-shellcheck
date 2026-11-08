@@ -69,7 +69,7 @@ function object(value: unknown): Record<string, unknown> {
 	return Object.fromEntries(Object.entries(value));
 }
 
-// Source edits must change findings; output protection must prevent overwriting
+// Source edits must change findings. Output protection must prevent overwriting
 // the dependency read through the installed plugin's filesystem grants.
 export async function verify({
 	directory,

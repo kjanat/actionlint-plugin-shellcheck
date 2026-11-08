@@ -34,7 +34,7 @@ pub fn schema() -> serde_json::Value {
                 "enum": ["bash", "sh", "dash", "ksh", "busybox"]
             },
             "disable": {
-                "description": "Diagnostic codes to suppress, with optional SC prefix; these are not optional-check names.",
+                "description": "Diagnostic codes to suppress, with optional SC prefix. Use enable for optional-check names.",
                 "examples": [["SC2086", "2154"]],
                 "type": "array",
                 "items": {"type": "string", "pattern": "^(SC)?[0-9]+$"}
@@ -190,7 +190,7 @@ mod tests {
     }
 
     // Editors use the published schema while the guest validates options at
-    // runtime; disagreement makes suggested settings unusable. This checks every
+    // runtime. Any disagreement makes suggested settings unusable. This checks every
     // engine-provided optional-check name in the generated schema and then submits
     // that catalogue to the parser, covering their shared public configuration surface.
     #[test]
