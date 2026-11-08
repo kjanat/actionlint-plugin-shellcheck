@@ -1,6 +1,6 @@
 [package]
 name         = "actionlint-plugin-shellcheck"
-version      = "0.3.0"
+version      = "0.3.1"
 edition      = "2024"
 rust-version = "1.99"
 description  = "ShellCheck for actionlint run steps as a WebAssembly component, built on shellcheck-rs"
@@ -17,7 +17,7 @@ path              = "src/bin/package.rs"
 required-features = ["package"]
 
 [dependencies]
-actionlint-extension-api = { path = "vendor/actionlint-extension-api", features = ["tool-integration"] }
+actionlint-extension-api = { path = "vendor/actionlint-extension-api", features = ["script-environments", "tool-integration"] }
 serde                    = { version = "1", features = ["derive"] }
 serde_json               = "1"
 shellcheck-rs            = { git = "https://github.com/kjanat/shellcheck-rs", rev = "9f28baaea0d91da85d1e7bfef08bd7c5d052e720" }

@@ -16,7 +16,7 @@ dependencies = [
 
 [[package]]
 name = "actionlint-plugin-shellcheck"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "actionlint-extension-api",
  "serde",

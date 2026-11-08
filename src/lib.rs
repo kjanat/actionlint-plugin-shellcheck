@@ -125,12 +125,15 @@ fn analyze_script(script: &Script, options: &Options) -> Outcome {
 }
 
 fn analyze_prepared(script: &Script, options: &Options, prepared: &script::Prepared) -> Outcome {
-    let mut excluded: Vec<i64> = prepared
-        .data
-        .excluded
-        .iter()
-        .map(|code| i64::from(*code))
-        .collect();
+    let mut excluded = match script::excluded_codes(script) {
+        Ok(codes) => codes,
+        Err(error) => {
+            return Outcome {
+                diagnostics: Vec::new(),
+                error: Some(error),
+            };
+        }
+    };
     for code in &options.disable {
         if !excluded.contains(code) {
             excluded.push(*code);
@@ -139,7 +142,11 @@ fn analyze_prepared(script: &Script, options: &Options, prepared: &script::Prepa
     let spec = CheckSpec {
         filename: FILENAME.to_string(),
         script: prepared.data.text.clone(),
-        shell_type_override: prepared.data.dialect.as_deref().and_then(parse_shell),
+        shell_type_override: if script::declared_shell(&prepared.data.text).is_some() {
+            None
+        } else {
+            prepared.data.dialect.as_deref().and_then(parse_shell)
+        },
         ignore_rc: true,
         excluded_warnings: excluded,
         optional_checks: options.enable.clone(),
