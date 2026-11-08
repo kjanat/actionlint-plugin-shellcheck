@@ -8,37 +8,80 @@ on:
     outputs:
       sha256:
         description: SHA-256 of the tested packaged component
-        value: ${{ jobs.build.outputs.sha256 }}
+        value: ${{ jobs.candidate.outputs.sha256 }}
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  rust:
+    name: Rust tests and lints
     runs-on: ubuntu-26.04
-    timeout-minutes: 30
-    outputs: { sha256: "${{ steps.candidate.outputs.sha256 }}" }
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with: { persist-credentials: false }
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
-        with:
-          go-version-file: tests/host/go.mod
-          cache-dependency-path: tests/host/go.sum
       - name: Install the pinned Rust toolchain
         run: rustup toolchain install
       - name: Unit tests
         run: cargo test --locked --all-features
-      - name: Lints
-        run: cargo clippy --locked --all-targets --all-features -- -Dwarnings;
-          cargo fmt --check
+      - name: Clippy
+        run: cargo clippy --locked --all-targets --all-features -- -Dwarnings
+      - name: Formatting
+        run: cargo fmt --check
+
+  package:
+    name: Package the component
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: { persist-credentials: false }
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
       - name: Build the component
         run: cargo build --locked --release --lib --target wasm32-wasip2
       - name: Package the component and static metadata
         run: cargo run --locked --features package --bin package --
           target/wasm32-wasip2/release/actionlint_plugin_shellcheck.wasm artifacts
-      - name: Host integration
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: actionlint-plugin-shellcheck
+          path: artifacts/
+          if-no-files-found: error
+
+  host:
+    name: Host integration
+    needs: package
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: { persist-credentials: false }
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: actionlint-plugin-shellcheck
+          path: artifacts
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: tests/host/go.mod
+          cache-dependency-path: tests/host/go.sum
+      - name: Host integration tests
         run: go -C tests/host test -mod=readonly ./...
+
+  candidate:
+    name: Registry candidate check
+    needs: package
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    outputs: { sha256: "${{ steps.candidate.outputs.sha256 }}" }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with: { persist-credentials: false }
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: actionlint-plugin-shellcheck
+          path: artifacts
       - name: Install the candidate and verify source following offline
         id: candidate
         uses: kjanat/actionlint-registry/check@master
@@ -51,9 +94,4 @@ jobs:
         with:
           name: candidate-verification
           path: candidate.json
-          if-no-files-found: error
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: actionlint-plugin-shellcheck
-          path: artifacts/
           if-no-files-found: error
