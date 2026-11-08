@@ -5,7 +5,7 @@ go 1.27.0
 toolchain go1.27.3
 
 require (
-	actionlint.kjanat.dev/v2 v2.0.0-20261106234842-70c824363f30
+	actionlint.kjanat.dev/v2 v2.0.0-20261108032339-a79d3522b436
 	github.com/kjanat/wacogo v0.2.3
 )
 
@@ -30,6 +30,7 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
+	github.com/tidwall/jsonc v0.3.3 // indirect
 	golang.org/x/mod v0.42.0 // indirect
 	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
