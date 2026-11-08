@@ -20,7 +20,7 @@ required-features = ["package"]
 actionlint-extension-api = { path = "vendor/actionlint-extension-api", features = ["tool-integration"] }
 serde                    = { version = "1", features = ["derive"] }
 serde_json               = "1"
-shellcheck-rs            = { git = "https://github.com/kjanat/shellcheck-rs", rev = "0b64935439ae0d02390c7bd68392373471de6a84" }
+shellcheck-rs            = { git = "https://github.com/kjanat/shellcheck-rs", rev = "9f28baaea0d91da85d1e7bfef08bd7c5d052e720" }
 
 [features]
 package = ["actionlint-extension-api/package"]
