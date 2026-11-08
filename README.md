@@ -4,8 +4,8 @@ This WebAssembly component uses [rshellcheck](https://github.com/kjanat/shellche
 on the `run:` steps actionlint analyzes. The component implements
 `kjanat:actionlint/analyzer@0.2.0` through
 [`actionlint-extension-api`](vendor/actionlint-extension-api/README.md).
-Its analyzer declares the `shellcheck` rule directly. The engine provider is `rshellcheck`.
-actionlint runs it in a fresh instance per document. Source reads use explicit read-only host grants.
+The analyzer declares the `shellcheck` rule and uses `rshellcheck` as its engine.
+actionlint creates a fresh instance for each document. The plugin reads sources through explicit read-only host grants.
 The plugin needs neither a native ShellCheck executable nor network access.
 
 ## Use
@@ -15,7 +15,7 @@ actionlint plugin install shellcheck
 actionlint check
 ```
 
-The registry installation selects this plugin as the ShellCheck backend.
+Installing from the registry selects this plugin as the ShellCheck backend.
 Its exported `kjanat:actionlint/tool-integration@0.2.0` interface identifies the managed tool role.
 It negotiates the versioned
 [`shellcheck-config@0.1.0` profile](vendor/actionlint-extension-api/json/shellcheck-config-0.1.0.md).
@@ -26,18 +26,18 @@ tool-integration declaration and negotiates the same host tool configuration.
 Raw analyzer calls can supply plugin options directly. Filesystem access still
 requires explicit caller-supplied grants.
 
-Each finding carries the ShellCheck code as `code`, the ShellCheck level as `severity`, the plain ShellCheck message
-and, when ShellCheck offers one, a fix with edits
-mapped into the workflow file. Findings in composite action scripts point at the action file.
+Each finding contains the ShellCheck code in `code`, the level in `severity` and the plain ShellCheck message.
+When ShellCheck offers a fix, the finding also contains edits mapped to the workflow file. Findings in composite action
+scripts point at the action file.
 The plugin returns findings even when another script or the engine's dataflow analysis cannot complete.
-The host then also receives an explicit incomplete-analysis error.
+The host also receives an incomplete-analysis error.
 
 The required `kjanat:actionlint-script/shell-script-inputs@0.3.0` host import supplies
 native ShellCheck's preparation: the resolved runner shell, a
 `# shellcheck shell=` directive at the top of the script, and the runner's startup options such as `set -e -o pipefail`
 for an explicit `bash`. Without a shell directive, the plugin skips steps whose shell is unknown, `pwsh`, `python` or a
 custom template
-that hides the script. `${{ }}` expressions are masked before analysis.
+that hides the script. The host masks `${{ }}` expressions before analysis.
 The host adds environment-name declarations without their values, preserving each exported spelling.
 SC2153 and SC2154 check those names unless unresolved declarations prevent the host from determining them.
 The default exclusions are SC1091, SC2194, SC2050, SC2157 and SC2043.
@@ -74,12 +74,13 @@ The host passes a JSON object. Every key is optional.
 | `source-path`       | Source search directories, translated through the granted filesystem roots                                                   |
 
 Unknown keys and invalid values fail analysis. The error names the key.
-The rule exposes a generated options schema for editor/tool discovery, also packaged as `artifacts/schema.json`.
+The rule exposes a generated options schema for editors and other tools. The package includes it as
+`artifacts/schema.json`.
 An explicit dialect option does not turn an unknown or unsupported runtime shell into a shell script.
 `disable` identifies emitted diagnostics by number. `enable` selects optional analysis passes by name. The plugin
 rejects unknown
-optional-check names, misspellings and numeric enable selectors. Both schema and validation use
-rshellcheck's typed optional-check catalogue. Neither parses CLI output or keeps a copied catalogue.
+optional-check names, misspellings and numeric enable selectors. The schema and validator use rshellcheck's typed
+optional-check catalogue. Neither parses CLI output or keeps a copy.
 
 For the managed plugin, `tools.shellcheck.config.external-sources: true` grants
 the workspace read-only. Explicit `source-path` directories also enable access
@@ -139,8 +140,8 @@ Release reuses CI, then downloads the tested package and receipt. The registry's
 both before publishing. Its `contents: write` permission publishes package files. The `id-token: write` permission
 authenticates the tag and repository. No publisher secret is needed.
 
-The workflow stages assets in a draft, downloads and compares all five files, then publishes and requires GitHub's
-`immutable` release flag before registry submission. Existing assets must match exactly. Reruns never overwrite
+The workflow uploads assets to a draft, then downloads and compares all five files. It publishes the release and checks
+GitHub's `immutable` flag before submitting to the registry. Existing assets must match exactly. Reruns never overwrite
 different bytes. An interrupted draft can resume missing uploads. Published releases must already be complete.
 
 Registry acceptance is asynchronous. The workflow polls for up to 30 minutes and succeeds only on `published`.
@@ -151,7 +152,7 @@ Release with the existing tag selected. An identical resubmission preserves the 
 cannot publish: registry OIDC authorization requires the workflow itself to run from the submitted tag.
 
 After publication, the shared action installs the exact candidate version and digest from the production registry
-and runs the same fixture with the same host revision. This checks delivery after candidate verification.
+and runs the same fixture with the same host revision. This verifies delivery after the candidate check.
 For normal use, install the selected version using actionlint's registry installer and commit its project lockfile.
 
 ## Test
@@ -176,4 +177,4 @@ describe running the fixture locally through the registry CLI.
 
 ## License
 
-GPL-3.0-or-later, as rshellcheck and ShellCheck.
+GPL-3.0-or-later, the same license as rshellcheck and ShellCheck.

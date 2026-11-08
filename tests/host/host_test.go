@@ -78,10 +78,8 @@ func analyze(t *testing.T, options string) []results.Diagnostic {
 	return findings
 }
 
-// A component can compile while its host adapter drops findings or
-// shifts their locations. This loads the packaged Wasm through the host component loader,
-// analyzes Bash and sh steps, and checks their diagnostics and quote edits. The
-// PowerShell step also catches accidental shell analysis of another language.
+// Load the packaged Wasm through the host and check diagnostics and quote edits
+// for Bash and sh steps. Check that the plugin skips the PowerShell step.
 func TestPluginReportsShellCheckFindings(t *testing.T) {
 	findings := analyze(t, "")
 	if len(findings) != 2 {
@@ -106,10 +104,8 @@ func TestPluginReportsShellCheckFindings(t *testing.T) {
 	}
 }
 
-// Users expect a disabled ShellCheck code to disappear without losing unrelated
-// findings. This passes the option through the host and component boundary and
-// checks the remaining bashism results. It catches configuration that parses
-// correctly in Rust but gets lost while the host invokes the Wasm plugin.
+// Pass a disabled code through the host to the component. Check that the code
+// disappears and unrelated bashism findings remain.
 func TestPluginOptionsDisableCodes(t *testing.T) {
 	findings := analyze(t, `{"disable": ["SC2086"]}`)
 	if len(findings) != 1 || findings[0].Code != "SC3010" {
@@ -117,10 +113,8 @@ func TestPluginOptionsDisableCodes(t *testing.T) {
 	}
 }
 
-// Misspelled settings must produce a useful error for both supported call paths.
-// This submits an unknown key through the host's schema validation and directly
-// to the component host, checking that each names the bad key. Otherwise one caller
-// could ignore a setting that another caller rejects.
+// Submit an unknown key through host schema validation and directly to the
+// component host. Both errors must name the key.
 func TestPluginRejectsUnknownOptions(t *testing.T) {
 	ctx := context.Background()
 	component := load(t)
@@ -134,11 +128,8 @@ func TestPluginRejectsUnknownOptions(t *testing.T) {
 	}
 }
 
-// Optional-check names and diagnostic numbers select different ShellCheck
-// features, and confusing them previously accepted ineffective configuration.
-// This sends misspellings and numeric selectors through the host and guest, then
-// checks that all remains accepted. Both the packaged schema and the runtime
-// parser must reject the bad selectors and accept the supported one.
+// Check that the packaged schema and runtime parser reject misspelled and numeric
+// optional-check selectors and accept all.
 func TestPluginValidatesOptionalCheckNames(t *testing.T) {
 	component := load(t)
 	for _, name := range []string{"require-variable-brace", "SC2086", "2086"} {
@@ -191,10 +182,8 @@ func (a *rawFixAnalyzer) CheckDocument(ctx context.Context, input checkinputs.In
 	return findings, nil
 }
 
-// The host can normalize diagnostic paths after an analyzer returns, hiding a
-// plugin that created edits against the wrong path or revision. This intercepts
-// actual component findings before that policy runs and checks every raw fix.
-// Editors need those original revision keys to reject edits against changed files.
+// Check raw component fixes before the host normalizes diagnostic paths. Editors
+// need the original revision keys to reject edits against changed files.
 func TestFixRevisionsUseDeclaringPathBeforePolicy(t *testing.T) {
 	component := load(t)
 	checked := &rawFixAnalyzer{Checker: component, ToolIntegrator: component}
@@ -254,10 +243,8 @@ func TestPackagedDeclarationMatchesRuntime(t *testing.T) {
 	}
 }
 
-// Release files can become stale even when the component itself still loads.
-// This opens the produced package, compares its metadata sidecar with the Wasm
-// section, and hashes every file listed in SHA256SUMS. It catches packaging that
-// ships files from different builds or checksum entries pointing outside the package.
+// Compare the metadata sidecar with the Wasm section. Check every SHA256SUMS entry
+// against the packaged file and reject paths outside the package.
 func TestPackageSidecarsAndChecksums(t *testing.T) {
 	inspected, err := pluginartifact.Resolve(t.Context(), pluginPath(), pluginartifact.Options{})
 	if err != nil {

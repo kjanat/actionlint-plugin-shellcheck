@@ -64,7 +64,7 @@ impl Guest for Plugin {
     }
 }
 
-/// Rule metadata shared by the component and its static package declaration.
+/// Return the rule metadata used by the component and package declaration.
 pub fn descriptor() -> Descriptor {
     Descriptor {
         description: env!("CARGO_PKG_DESCRIPTION").to_string(),

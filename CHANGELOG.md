@@ -4,8 +4,8 @@
 
 ### Fixed
 
-- Skip PowerShell, Python, `cmd` and other non-shell interpreters instead of checking them as shell scripts (https://github.com/kjanat/actionlint-plugin-shellcheck/pull/16).
-- Parse leading ShellCheck directives with ShellCheck's parser and choose exclusions from the host's environment facts (https://github.com/kjanat/actionlint-plugin-shellcheck/pull/16).
+- Skip scripts that use PowerShell, Python, `cmd` or another non-shell interpreter (https://github.com/kjanat/actionlint-plugin-shellcheck/pull/16).
+- Use ShellCheck's parser for leading directives and choose exclusions from the host's environment facts (https://github.com/kjanat/actionlint-plugin-shellcheck/pull/16).
 
 ### Changed
 
@@ -15,7 +15,7 @@
 
 ### Changed
 
-- **Breaking:** read scripts through the host's `kjanat:actionlint-script/shell-script-inputs@0.3.0` interface. Hosts without it reject this release. SC2153 and SC2154 check scoped environment declarations, without their values, instead of being disabled for every script (https://github.com/kjanat/actionlint-plugin-shellcheck/pull/14).
+- Breaking change. Read scripts through the host's `kjanat:actionlint-script/shell-script-inputs@0.3.0` interface. Hosts without it reject this release. SC2153 and SC2154 now check scoped environment declarations without their values (https://github.com/kjanat/actionlint-plugin-shellcheck/pull/14).
 - Bash lookups distinguish the case of environment names. Merged Windows declarations keep their first spelling (https://github.com/kjanat/actionlint-plugin-shellcheck/pull/14).
 
 ## [0.2.1] - 2026-11-02
@@ -28,8 +28,8 @@
 
 ### Changed
 
-- **Breaking:** implement `kjanat:actionlint/analyzer@0.2.0` for actionlint v2 hosts. Hosts supporting only `0.1.0` reject this release.
-- Request shell preparation by script occurrence instead of source reference, matching the `0.2.0` `prepared-scripts` import.
+- Breaking change. Implement `kjanat:actionlint/analyzer@0.2.0` for actionlint v2 hosts. Hosts supporting only `0.1.0` reject this release.
+- Request shell preparation by script occurrence, as required by the `0.2.0` `prepared-scripts` import.
 
 ## [0.1.2] - 2026-10-24
 

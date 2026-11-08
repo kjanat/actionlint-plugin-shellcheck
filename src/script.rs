@@ -35,8 +35,8 @@ pub fn request(script: &Script, dialect: Option<&str>) -> Result<Option<Prepared
     Ok(Some(Prepared { data }))
 }
 
-// Parse only the leading comments so a broken script body cannot hide its shell
-// directive. ShellCheck supplies the directive parser and its quoting rules.
+// Parse leading comments with ShellCheck so a broken script body cannot hide
+// the shell directive. ShellCheck also handles directive quoting.
 pub fn declared_shell(text: &str) -> Option<String> {
     let mut header = text
         .lines()
