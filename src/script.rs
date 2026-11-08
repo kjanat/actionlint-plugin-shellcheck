@@ -2,8 +2,8 @@ use crate::exports::kjanat::actionlint::analyzer::Position;
 use crate::exports::kjanat::actionlint::analyzer::Script;
 use crate::kjanat::actionlint_script::environments;
 use crate::kjanat::actionlint_script::shell_script_inputs;
-use shellcheck_rs::ast::Annotation;
-use shellcheck_rs::ast::InnerToken;
+use rshellcheck_core::ast::Annotation;
+use rshellcheck_core::ast::InnerToken;
 
 pub struct Prepared {
     pub data: shell_script_inputs::Input,
@@ -44,7 +44,7 @@ pub fn declared_shell(text: &str) -> Option<String> {
         .collect::<Vec<_>>()
         .join("\n");
     header.push_str("\ntrue\n");
-    let parsed = shellcheck_rs::parser::parse_script(crate::FILENAME, &header);
+    let parsed = rshellcheck_core::parser::parse_script(crate::FILENAME, &header);
     let mut token = parsed.root.as_ref()?;
     while let InnerToken::T_Annotation {
         annotations,

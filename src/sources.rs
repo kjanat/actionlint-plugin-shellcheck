@@ -4,10 +4,10 @@ use std::path::PathBuf;
 
 use exports::kjanat::actionlint::analyzer::Diagnostic;
 use exports::kjanat::actionlint::analyzer::Position;
-use shellcheck_rs::interface::PositionedComment;
-use shellcheck_rs::interface::System;
-use shellcheck_rs::interface::decode_bytes;
-use shellcheck_rs::interface::not_an_input;
+use rshellcheck_core::interface::PositionedComment;
+use rshellcheck_core::interface::System;
+use rshellcheck_core::interface::decode_bytes;
+use rshellcheck_core::interface::not_an_input;
 
 use crate::exports;
 

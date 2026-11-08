@@ -19,9 +19,9 @@ name = "actionlint-plugin-shellcheck"
 version = "0.3.1"
 dependencies = [
  "actionlint-extension-api",
+ "rshellcheck-core",
  "serde",
  "serde_json",
- "shellcheck-rs",
 ]
 
 [[package]]
@@ -254,6 +254,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "reblessive"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbc4a4ea2a66a41a1152c4b3d86e8954dc087bdf33af35446e6e176db4e73c8c"
+
+[[package]]
 name = "regex"
 version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -281,6 +287,16 @@ name = "regex-syntax"
 version = "0.8.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
+
+[[package]]
+name = "rshellcheck-core"
+version = "1.0.0"
+source = "git+https://github.com/kjanat/shellcheck-rs?rev=9f28baaea0d91da85d1e7bfef08bd7c5d052e720#9f28baaea0d91da85d1e7bfef08bd7c5d052e720"
+dependencies = [
+ "im-rc",
+ "reblessive",
+ "regex",
+]
 
 [[package]]
 name = "semver"
@@ -340,15 +356,6 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "digest",
-]
-
-[[package]]
-name = "shellcheck-rs"
-version = "1.0.0"
-source = "git+https://github.com/kjanat/shellcheck-rs?rev=0b64935439ae0d02390c7bd68392373471de6a84#0b64935439ae0d02390c7bd68392373471de6a84"
-dependencies = [
- "im-rc",
- "regex",
 ]
 
 [[package]]

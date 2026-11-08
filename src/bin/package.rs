@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             version: env!("CARGO_PKG_VERSION"),
         },
         engine: Engine {
-            name: "shellcheck-rs",
+            name: "rshellcheck",
             version: "1.0.0",
         },
         languages: &["shell"],
