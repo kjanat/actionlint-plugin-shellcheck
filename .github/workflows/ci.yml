@@ -45,7 +45,7 @@ jobs:
           -o "${RUNNER_TEMP}/actionlint" actionlint.kjanat.dev/v2/cmd/actionlint
       - name: Install the candidate and verify source following offline
         id: candidate
-        uses: kjanat/actionlint-registry/check@f188a50dc2af9282a4d8de644cc90dbcfdb5443b
+        uses: kjanat/actionlint-registry/check@f188a50dc2af9282a4d8de644cc90dbcfdb5443b # master
         with:
           actionlint: ${{ runner.temp }}/actionlint
           fixture: tests/installation.ts
