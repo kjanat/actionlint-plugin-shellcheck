@@ -17,8 +17,6 @@ import (
 	"actionlint.kjanat.dev/v2/internal/results"
 )
 
-// Exercise workspace grants, escape rejection and source overwrite protection
-// through the real CLI and packaged component.
 func TestManagedSourceGrantsThroughCLI(t *testing.T) {
 	binary := filepath.Join(t.TempDir(), "actionlint")
 	if runtime.GOOS == "windows" {

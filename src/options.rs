@@ -143,8 +143,6 @@ mod tests {
     use super::parse_code;
     use rshellcheck_core::Severity;
 
-    // Empty input takes a separate path from JSON deserialization. Check that it
-    // leaves the dialect unspecified and includes style findings by default.
     #[test]
     fn empty_options_are_defaults() {
         let options = Options::parse("").unwrap_or_else(|error| panic!("{error}"));
@@ -157,9 +155,6 @@ mod tests {
         assert!(matches!(options.severity, Severity::StyleC));
     }
 
-    // Invalid configuration must identify the offending field. Check malformed
-    // dialect, exclusion, optional-check and severity values, including numeric
-    // diagnostic exclusions and named optional checks.
     #[test]
     fn options_are_validated() {
         let options = Options::parse(r#"{"shell": "dash", "disable": ["SC2086", "2034"], "enable": ["avoid-nullary-conditions"], "extended-analysis": false, "severity": "warning"}"#)
@@ -186,8 +181,6 @@ mod tests {
         assert_eq!(parse_code("SC"), None);
     }
 
-    // Editors use the published schema and the guest validates options at runtime.
-    // Check every engine-provided optional-check name in both the schema and parser.
     #[test]
     fn schema_and_validation_use_the_engine_catalogue() {
         let schema = super::schema();

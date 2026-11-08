@@ -32,8 +32,6 @@ func (s *sourceFiles) Open(name string) (fs.File, error) {
 	return f, err
 }
 
-// Register one workflow-owned script in the invocation graph so the host accepts
-// its occurrence for shell preparation.
 var (
 	sourceEntry      = checkinputs.OccurrenceID(strings.Repeat("a", 64))
 	sourceOccurrence = checkinputs.OccurrenceID(strings.Repeat("b", 64))
@@ -53,8 +51,6 @@ func sourceScript(text string) checkinputs.Script {
 	return script
 }
 
-// These filesystem tests use identity-mapped shell fixtures. The application and
-// packaged-engine tests cover shell preparation.
 func analyzeSources(t *testing.T, component checkinputs.Checker, input checkinputs.Input) ([]results.Diagnostic, error) {
 	t.Helper()
 	script := input.Scripts[0]
@@ -83,8 +79,6 @@ func analyzeSources(t *testing.T, component checkinputs.Checker, input checkinpu
 	return executor.Run(t.Context(), input, []checkinputs.Registration{{Checker: component, Options: input.Options}})
 }
 
-// Record source reads through workspace and external mounts, including a nested
-// source and an absolute host path. Files without findings must still be dependencies.
 func TestGrantedSourcesIncludeCleanNestedAndExternalFiles(t *testing.T) {
 	component := load(t)
 	files := &sourceFiles{FS: fstest.MapFS{
@@ -122,8 +116,6 @@ printf '%s\n' "$VALUE" "$FLAGS" "$SHARED"
 	}
 }
 
-// Analyze the same script twice, changing a sourced value from one word to two.
-// The SC2086 warning must reflect the updated source on the second call.
 func TestSourceEditChangesSubsequentAnalysis(t *testing.T) {
 	component := load(t)
 	for _, tc := range []struct {
@@ -145,8 +137,6 @@ func TestSourceEditChangesSubsequentAnalysis(t *testing.T) {
 	}
 }
 
-// Check that SC1094 maps a syntax error in a sourced file to the workflow's
-// source invocation, including its path, reference and position.
 func TestSourcedParseFailureIsReportedAtInvocation(t *testing.T) {
 	component := load(t)
 	findings, err := analyzeSources(t, component, checkinputs.Input{
@@ -170,8 +160,6 @@ func TestSourcedParseFailureIsReportedAtInvocation(t *testing.T) {
 	t.Fatalf("source parse failure lost: %+v", findings)
 }
 
-// Record guest reads when the working directory is unknown. Absolute paths must
-// remain readable, and relative paths must not resolve against an invented base.
 func TestUnknownDirectoryUsesOnlyIndependentSourcePaths(t *testing.T) {
 	component := load(t)
 	for _, tc := range []struct {
@@ -207,8 +195,6 @@ func TestUnknownDirectoryUsesOnlyIndependentSourcePaths(t *testing.T) {
 	}
 }
 
-// Supply conflicting source values to check that ShellCheck searches relative
-// candidates first. Remove the relative candidate to check the absolute fallback.
 func TestAbsoluteSourceSearchOrderMatchesShellCheck(t *testing.T) {
 	component := load(t)
 	for _, shadow := range []bool{true, false} {

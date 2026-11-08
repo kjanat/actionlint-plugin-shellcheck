@@ -183,8 +183,6 @@ mod tests {
     use super::Files;
     use super::SourceRoot;
 
-    // Check Unix and Windows mount translation at path boundaries. Preserve
-    // parent components and leave similarly named directories unchanged.
     #[test]
     fn host_paths_translate_mount_prefixes_without_cleaning_parents() {
         let files = Files::new(

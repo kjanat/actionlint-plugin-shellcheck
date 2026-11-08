@@ -78,8 +78,6 @@ func analyze(t *testing.T, options string) []results.Diagnostic {
 	return findings
 }
 
-// Load the packaged Wasm through the host and check diagnostics and quote edits
-// for Bash and sh steps. Check that the plugin skips the PowerShell step.
 func TestPluginReportsShellCheckFindings(t *testing.T) {
 	findings := analyze(t, "")
 	if len(findings) != 2 {
@@ -104,8 +102,6 @@ func TestPluginReportsShellCheckFindings(t *testing.T) {
 	}
 }
 
-// Pass a disabled code through the host to the component. Check that the code
-// disappears and unrelated bashism findings remain.
 func TestPluginOptionsDisableCodes(t *testing.T) {
 	findings := analyze(t, `{"disable": ["SC2086"]}`)
 	if len(findings) != 1 || findings[0].Code != "SC3010" {
@@ -113,8 +109,6 @@ func TestPluginOptionsDisableCodes(t *testing.T) {
 	}
 }
 
-// Submit an unknown key through host schema validation and directly to the
-// component host. Both errors must name the key.
 func TestPluginRejectsUnknownOptions(t *testing.T) {
 	ctx := context.Background()
 	component := load(t)
@@ -128,8 +122,6 @@ func TestPluginRejectsUnknownOptions(t *testing.T) {
 	}
 }
 
-// Check that the packaged schema and runtime parser reject misspelled and numeric
-// optional-check selectors and accept all.
 func TestPluginValidatesOptionalCheckNames(t *testing.T) {
 	component := load(t)
 	for _, name := range []string{"require-variable-brace", "SC2086", "2086"} {
@@ -182,8 +174,6 @@ func (a *rawFixAnalyzer) CheckDocument(ctx context.Context, input checkinputs.In
 	return findings, nil
 }
 
-// Check raw component fixes before the host normalizes diagnostic paths. Editors
-// need the original revision keys to reject edits against changed files.
 func TestFixRevisionsUseDeclaringPathBeforePolicy(t *testing.T) {
 	component := load(t)
 	checked := &rawFixAnalyzer{Checker: component, ToolIntegrator: component}
@@ -196,7 +186,6 @@ func TestFixRevisionsUseDeclaringPathBeforePolicy(t *testing.T) {
 	}
 }
 
-// Compare the packaged declaration with the descriptor exported by the loaded guest.
 func TestPackagedDeclarationMatchesRuntime(t *testing.T) {
 	inspected, err := pluginartifact.Resolve(t.Context(), pluginPath(), pluginartifact.Options{})
 	if err != nil {
@@ -243,8 +232,6 @@ func TestPackagedDeclarationMatchesRuntime(t *testing.T) {
 	}
 }
 
-// Compare the metadata sidecar with the Wasm section. Check every SHA256SUMS entry
-// against the packaged file and reject paths outside the package.
 func TestPackageSidecarsAndChecksums(t *testing.T) {
 	inspected, err := pluginartifact.Resolve(t.Context(), pluginPath(), pluginartifact.Options{})
 	if err != nil {
