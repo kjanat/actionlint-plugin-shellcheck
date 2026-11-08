@@ -64,7 +64,7 @@ impl Guest for Plugin {
     }
 }
 
-/// Return the rule metadata used by the component and package declaration.
+/// Rule metadata shared by the component and its static package declaration.
 pub fn descriptor() -> Descriptor {
     Descriptor {
         description: env!("CARGO_PKG_DESCRIPTION").to_string(),
@@ -74,12 +74,12 @@ pub fn descriptor() -> Descriptor {
         provider: "rshellcheck".to_string(),
         recommended: true,
         explanation: concat!(
-            "Run rshellcheck on supported shell scripts. ",
-            "Following source files requires read-only host grants. The plugin does not read rc files. Review fixes before applying them."
+            "Checks supported shell scripts with rshellcheck. ",
+            "The plugin follows source files only through read-only host grants and ignores rc files. Review fixes before applying them."
         )
         .to_string(),
         help: concat!(
-            "Set shell, disable, enable, extended-analysis and severity in ",
+            "Configure shell, disable, enable, extended-analysis and severity under ",
             "lint.rules.plugins.shellcheck.options."
         )
         .to_string(),

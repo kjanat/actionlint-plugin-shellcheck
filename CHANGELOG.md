@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-- Rewrite the plugin description, rule explanation, help text and option descriptions. ([#22](https://github.com/kjanat/actionlint-plugin-shellcheck/pull/22))
+- Rewrite the rule explanation and option descriptions. ([#22](https://github.com/kjanat/actionlint-plugin-shellcheck/pull/22))
 
 ## [0.3.1] - 2026-11-08
 

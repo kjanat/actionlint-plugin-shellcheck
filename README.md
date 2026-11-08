@@ -1,7 +1,7 @@
 # actionlint-plugin-shellcheck
 
-Run ShellCheck on actionlint's workflow `run:` steps with a WebAssembly component built with
-[rshellcheck](https://github.com/kjanat/shellcheck-rs). No ShellCheck executable or network connection is required.
+This plugin runs ShellCheck on the `run:` steps that actionlint analyzes. It is a WebAssembly component built on
+[rshellcheck](https://github.com/kjanat/shellcheck-rs) and needs no ShellCheck executable or network connection.
 The component declares the `shellcheck` rule through `kjanat:actionlint/analyzer@0.2.0`. actionlint creates a new
 instance for each document.
 
@@ -15,26 +15,26 @@ actionlint check
 The registry installs the plugin as the managed ShellCheck backend. The plugin advertises that role through
 `kjanat:actionlint/tool-integration@0.2.0` and negotiates the
 [`shellcheck-config@0.1.0` profile](vendor/actionlint-extension-api/json/shellcheck-config-0.1.0.md). It declines
-configurations requiring rc files, diagnostic ranges or `disable: [all]`, allowing the host to select the native
-backend. Disable ShellCheck with `--no-shellcheck` or `tools.shellcheck.enabled: false`.
+configurations that need rc files, diagnostic ranges or `disable: [all]`. The host can then run native ShellCheck for
+them. Disable ShellCheck with `--no-shellcheck` or `tools.shellcheck.enabled: false`.
 
 You can also load `artifacts/plugin.wasm` with `--plugin`. The host discovers the same tool integration and negotiates
-the same configuration. Direct analyzer callers may pass plugin options. To follow source files, they must also grant
-read-only filesystem access.
-No source-file access is needed when `external-sources` is false, the default.
+the same configuration. Direct analyzer callers can pass plugin options. With `external-sources` enabled, they must also
+grant read-only filesystem access. `external-sources` is off by default.
 
 ## Analysis
 
-A finding contains the ShellCheck code in `code`, its level in `severity`, and the unmodified message. When available,
-a fix contains edits mapped to the workflow file. Findings for composite action scripts point to the action file. If one
-script or the dataflow analysis fails, the plugin returns the other findings along with an incomplete-analysis error.
+A finding has the ShellCheck code in `code`, the ShellCheck level in `severity`, and the ShellCheck message without its
+trailing period. If ShellCheck offers a fix, the finding carries its edits mapped to the workflow file. Findings for
+composite action scripts point to the action file. If one script or the dataflow analysis fails, the plugin still
+returns the findings it has and reports an incomplete-analysis error.
 
 The host must provide `kjanat:actionlint-script/shell-script-inputs@0.3.0`. It supplies the resolved runner shell, a
 leading `# shellcheck shell=` directive and runner startup options, such as `set -e -o pipefail` for explicit `bash`.
 Without a shell directive, the plugin skips unknown shells, `pwsh`, `python` and custom templates that hide the script.
-The host masks `${{ }}` expressions and declares environment names without their values, retaining their spelling.
-SC2153 and SC2154 check these names unless unresolved declarations prevent the host from determining them. SC1091,
-SC2194, SC2050, SC2157 and SC2043 are excluded by default.
+The host masks `${{ }}` expressions. It declares environment names without their values, each in its exported spelling.
+SC2153 and SC2154 check these names unless unresolved declarations prevent the host from determining them. The plugin
+excludes SC1091, SC2194, SC2050, SC2157 and SC2043 by default.
 
 The host must also provide `kjanat:actionlint/source-annotations@0.2.0`. It passes YAML comments attached to a script,
 including leading and trailing directives:
@@ -54,7 +54,7 @@ positions for anchored scripts and invoked composite actions. A directive on an 
 
 ## Configure the plugin
 
-The host passes an optional JSON object. All keys are optional.
+The host passes a JSON object. Every key is optional.
 
 | Key                 | Purpose                                                                                                |
 | ------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -66,7 +66,7 @@ The host passes an optional JSON object. All keys are optional.
 | `external-sources`  | Follow sources in directories granted by the host. The default is `false`.                             |
 | `source-path`       | Set source search directories. The host translates them through its granted filesystem roots.          |
 
-Unknown keys and invalid values stop analysis and produce an error naming the key. `disable` accepts diagnostic
+An unknown key or invalid value stops analysis with an error that names the key. `disable` accepts diagnostic
 numbers. `enable` accepts optional-check names. The plugin rejects misspelled names and numeric enable selectors.
 The generated schema and runtime validator both use rshellcheck's typed optional-check catalogue. The package includes
 the schema as `artifacts/schema.json`. Setting a dialect does not turn an unsupported runtime shell into a shell script.
@@ -74,8 +74,8 @@ the schema as `artifacts/schema.json`. Setting a dialect does not turn an unsupp
 ## Source files
 
 For managed installations, `tools.shellcheck.config.external-sources: true` grants read-only access to the workspace.
-Explicit `source-path` directories also grant access, provided they remain inside the workspace after resolving
-symlinks. Paths or symlinks that escape it cause analysis to fail. Plugin options can narrow host grants, but cannot
+Explicit `source-path` directories also grant access. They must stay inside the workspace after the host resolves
+symlinks. A path or symlink that leaves the workspace fails analysis. Plugin options can narrow host grants, but cannot
 restore disabled access or add directories outside the workspace. ShellCheck directives cannot expand grants either.
 
 The required `kjanat:actionlint/source-files@0.2.0` import supplies mount translations. The host maps absolute source
@@ -126,13 +126,13 @@ The Go tests inspect the package metadata and load the component through actionl
 diagnostic positions, fixes, option errors, descriptors and checksums. Set `ACTIONLINT_PLUGIN_SHELLCHECK` to test a
 different packaged component and its sidecars. The unpublished test module uses the actionlint module prefix to access
 private packages and pins the published host revision. The distributed component depends on the guest contract, not the
-host's Go API. Native tests cover partial dataflow and startup failures alongside findings from other scripts.
+host's Go API. Native tests check that a dataflow or startup failure keeps the other findings.
 
 PR CI also installs the candidate from a local registry catalogue and runs
-[the installation fixture](tests/installation.ts).
-It checks source reads, positions, edits and read-only grants, then repeats the check without the catalogue and verifies
-that it fails after the cached Wasm is removed. The `candidate-verification` artifact records the package digest, host
-and fixture. This check needs no tag, registry submission or publisher credential. The registry's
+[the installation fixture](tests/installation.ts). The fixture checks source reads, positions, edits and read-only
+grants. CI then repeats the check without the catalogue, removes the cached Wasm and expects the check to fail. The
+`candidate-verification` artifact records the package digest, host and fixture. This check needs no tag, registry
+submission or publisher credential. The registry's
 [candidate check instructions](https://github.com/kjanat/actionlint-registry#check-a-candidate) explain how to run it
 locally.
 
