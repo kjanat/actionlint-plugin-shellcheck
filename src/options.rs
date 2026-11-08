@@ -1,6 +1,6 @@
+use rshellcheck_core::Severity;
+use rshellcheck_core::Shell;
 use serde::Deserialize;
-use shellcheck_rs::Severity;
-use shellcheck_rs::Shell;
 
 #[derive(Deserialize, Default)]
 #[serde(rename_all = "kebab-case", deny_unknown_fields, default)]
@@ -17,7 +17,7 @@ struct Raw {
 pub fn schema() -> serde_json::Value {
     let optional_names: Vec<_> = std::iter::once("all")
         .chain(
-            shellcheck_rs::optional_checks()
+            rshellcheck_core::optional_checks()
                 .iter()
                 .map(|check| check.name),
         )
@@ -105,7 +105,7 @@ impl Options {
         }
         for name in &raw.enable {
             if name != "all"
-                && !shellcheck_rs::optional_checks()
+                && !rshellcheck_core::optional_checks()
                     .iter()
                     .any(|check| check.name == name)
             {
@@ -141,7 +141,7 @@ impl Options {
 mod tests {
     use super::Options;
     use super::parse_code;
-    use shellcheck_rs::Severity;
+    use rshellcheck_core::Severity;
 
     // A plugin installation without an options object must remain usable. The
     // empty-string input takes a separate path from JSON deserialization, so this
@@ -199,9 +199,9 @@ mod tests {
         let names: Vec<String> =
             serde_json::from_value(schema["properties"]["enable"]["items"]["enum"].clone())
                 .expect("optional-check enum");
-        assert_eq!(names.len(), shellcheck_rs::optional_checks().len() + 1);
+        assert_eq!(names.len(), rshellcheck_core::optional_checks().len() + 1);
         assert_eq!(names[0], "all");
-        for check in shellcheck_rs::optional_checks() {
+        for check in rshellcheck_core::optional_checks() {
             assert!(names.iter().any(|name| name == check.name));
         }
         let options = serde_json::json!({"enable": names}).to_string();

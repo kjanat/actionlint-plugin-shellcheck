@@ -19,12 +19,12 @@ use exports::kjanat::actionlint::analyzer::Outcome;
 use exports::kjanat::actionlint::analyzer::Position;
 use exports::kjanat::actionlint::analyzer::Revision;
 use exports::kjanat::actionlint::analyzer::Script;
-use shellcheck_rs::interface::CheckResult;
-use shellcheck_rs::interface::CheckSpec;
-use shellcheck_rs::interface::NoExternalSources;
-use shellcheck_rs::interface::PositionedComment;
-use shellcheck_rs::interface::Replacement;
-use shellcheck_rs::interface::System;
+use rshellcheck_core::interface::CheckResult;
+use rshellcheck_core::interface::CheckSpec;
+use rshellcheck_core::interface::NoExternalSources;
+use rshellcheck_core::interface::PositionedComment;
+use rshellcheck_core::interface::Replacement;
+use rshellcheck_core::interface::System;
 
 use options::Options;
 use options::parse_shell;
@@ -71,10 +71,10 @@ pub fn descriptor() -> Descriptor {
         category: "correctness".to_string(),
         subcategory: "scripts".to_string(),
         maturity: String::new(),
-        provider: "shellcheck-rs".to_string(),
+        provider: "rshellcheck".to_string(),
         recommended: true,
         explanation: concat!(
-            "Checks supported shell snippets with shellcheck-rs. ",
+            "Checks supported shell snippets with rshellcheck. ",
             "External sources require read-only host grants; rc files are not read. Fixes require review."
         )
         .to_string(),
@@ -167,7 +167,7 @@ fn analyze_prepared(script: &Script, options: &Options, prepared: &script::Prepa
     } else {
         Rc::new(NoExternalSources)
     };
-    let result = shellcheck_rs::checker::check_script_with(system, &spec);
+    let result = rshellcheck_core::checker::check_script_with(system, &spec);
     map_result(
         script,
         prepared,

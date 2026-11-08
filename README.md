@@ -1,10 +1,10 @@
 # actionlint-plugin-shellcheck
 
 ShellCheck for the `run:` steps actionlint analyzes, as a WebAssembly component built on
-[shellcheck-rs](https://github.com/kjanat/shellcheck-rs). The component implements
+[rshellcheck](https://github.com/kjanat/shellcheck-rs). The component implements
 `kjanat:actionlint/analyzer@0.2.0` through
 [`actionlint-extension-api`](vendor/actionlint-extension-api/README.md).
-Its analyzer declares the `shellcheck` rule directly; the engine provider is `shellcheck-rs`.
+Its analyzer declares the `shellcheck` rule directly; the engine provider is `rshellcheck`.
 actionlint runs it in a fresh instance per document. Source reads use explicit read-only host grants;
 no native ShellCheck executable or network access is needed.
 
@@ -77,7 +77,7 @@ The rule exposes a generated options schema for editor/tool discovery, also pack
 An explicit dialect option does not turn an unknown or unsupported runtime shell into a shell script.
 `disable` identifies emitted diagnostics by number; `enable` selects optional analysis passes by name. Unknown
 optional-check names, misspellings and numeric enable selectors are rejected. Both schema and validation use
-shellcheck-rs's typed optional-check catalogue; no CLI output parsing or copied catalogue is involved.
+rshellcheck's typed optional-check catalogue; no CLI output parsing or copied catalogue is involved.
 
 For the managed plugin, `tools.shellcheck.config.external-sources: true` grants
 the workspace read-only. Explicit `source-path` directories also enable access
@@ -174,4 +174,4 @@ The fixture also runs through the registry CLI locally; see its
 
 ## License
 
-GPL-3.0-or-later, as shellcheck-rs and ShellCheck.
+GPL-3.0-or-later, as rshellcheck and ShellCheck.

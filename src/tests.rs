@@ -116,13 +116,13 @@ fn masked_lines_never_receive_engine_fixes() {
 fn incomplete_engine_result_keeps_findings() {
     let source = script("echo $x");
     let prepared = prepared();
-    let mut result = shellcheck_rs::checker::check_script(&CheckSpec {
+    let mut result = rshellcheck_core::checker::check_script(&CheckSpec {
         filename: FILENAME.into(),
         script: prepared.data.text.clone(),
-        shell_type_override: Some(shellcheck_rs::Shell::Bash),
+        shell_type_override: Some(rshellcheck_core::Shell::Bash),
         ..CheckSpec::default()
     });
-    result.dataflow_error = Some(shellcheck_rs::cfg::InternalError("Missing root"));
+    result.dataflow_error = Some(rshellcheck_core::cfg::InternalError("Missing root"));
     let outcome = map_result(
         &source,
         &prepared,
