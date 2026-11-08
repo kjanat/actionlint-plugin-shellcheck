@@ -83,7 +83,7 @@ include = ["pyproject.toml"]
 path    = "https://kjanat.github.io/runner/schemas/runner.toml.schema.json"
 include = ["runner.toml", ".runner.toml"]
 
-# Zed Editor
+# Zed editor
 [[schemas]]
 path    = "https://raw.githubusercontent.com/kjanat/zed-editor/feature/extension-toml-schema/crates/extension_api/schemas/language-config.schema.json"
 include = ["**/languages/*/config.toml"]
@@ -92,7 +92,7 @@ include = ["**/languages/*/config.toml"]
 path    = "https://raw.githubusercontent.com/kjanat/zed-editor/feature/extension-toml-schema/crates/extension_api/schemas/extension.schema.json"
 include = ["**/zed-*/extension.toml", "**/*-zed/extension.toml"]
 
-# AI Stuff
+# AI tools
 [[schemas]]  # Documentation: https://developers.openai.com/codex/
 path    = "https://gist.githubusercontent.com/kjanat/5153798b521fbbc686932463327669c8/raw/codex-config.schema.json"
 include = [".codex/config.toml", "**/.codex/config.toml"]

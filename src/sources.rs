@@ -11,7 +11,7 @@ use rshellcheck_core::interface::not_an_input;
 
 use crate::exports;
 
-/// Source access uses only the filesystem directories granted to this invocation.
+/// Read sources only from the directories granted to this invocation.
 pub struct Files {
     directory: Option<PathBuf>,
     paths: Vec<String>,
@@ -20,7 +20,7 @@ pub struct Files {
 
 pub use crate::kjanat::actionlint::source_files::SourceRoot;
 
-/// Mount translation is a host capability, never a plugin configuration option.
+/// The host translates mount paths. Plugin options cannot configure them.
 #[cfg(target_arch = "wasm32")]
 pub fn roots() -> Vec<SourceRoot> {
     crate::kjanat::actionlint::source_files::roots()
@@ -183,10 +183,6 @@ mod tests {
     use super::Files;
     use super::SourceRoot;
 
-    // Source directives can name host paths while the guest sees mounted paths.
-    // This checks Unix and Windows prefix translation, component boundaries and
-    // preservation of parent components for filesystem resolution. A similarly
-    // named directory must not be rewritten into an unrelated configured mount.
     #[test]
     fn host_paths_translate_mount_prefixes_without_cleaning_parents() {
         let files = Files::new(

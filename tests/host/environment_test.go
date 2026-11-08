@@ -62,7 +62,7 @@ func TestScopedEnvironmentNamesThroughComponent(t *testing.T) {
 				}
 			}
 			if !slices.Equal(codes, tc.codes) {
-				t.Fatalf("ShellCheck codes = %v, want %v; diagnostics: %+v", codes, tc.codes, result.Diagnostics)
+				t.Fatalf("ShellCheck codes = %v, want %v. Diagnostics: %+v", codes, tc.codes, result.Diagnostics)
 			}
 		})
 	}

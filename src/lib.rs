@@ -74,8 +74,8 @@ pub fn descriptor() -> Descriptor {
         provider: "rshellcheck".to_string(),
         recommended: true,
         explanation: concat!(
-            "Checks supported shell snippets with rshellcheck. ",
-            "External sources require read-only host grants; rc files are not read. Fixes require review."
+            "Checks supported shell scripts with rshellcheck. ",
+            "The plugin follows source files only through read-only host grants and ignores rc files. Review fixes before applying them."
         )
         .to_string(),
         help: concat!(

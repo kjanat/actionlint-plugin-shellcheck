@@ -51,8 +51,6 @@ func TestYAMLDirectivesReachThePackagedEngine(t *testing.T) {
 			})
 		}
 	}
-	// Reuse the same host after every annotated call. An identical script without
-	// a YAML directive must still report its original diagnostic and quote edits.
 	plain := directiveWorkflowPrefix + "      - run: echo $HI\n"
 	findings := directiveFindings(t, component, plain)
 	if len(findings) != 1 || findings[0].Code != "SC2086" || findings[0].Start != (sourcepos.Position{Line: 6, Column: 19}) {
