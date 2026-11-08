@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- Rewrite the plugin description, rule explanation, help text and option descriptions. ([#22](https://github.com/kjanat/actionlint-plugin-shellcheck/pull/22))
+
 ## [0.3.1] - 2026-11-08
 
 - Skip scripts using PowerShell, Python, `cmd` or another non-shell interpreter. Parse leading directives with ShellCheck's parser and choose exclusions using the host's environment facts. ([#16](https://github.com/kjanat/actionlint-plugin-shellcheck/pull/16))
@@ -32,6 +36,7 @@
 
 - Publish the first release.
 
+[Unreleased]: https://github.com/kjanat/actionlint-plugin-shellcheck/compare/v0.3.1...HEAD
 [0.3.1]: https://github.com/kjanat/actionlint-plugin-shellcheck/releases/tag/v0.3.1
 [0.3.0]: https://github.com/kjanat/actionlint-plugin-shellcheck/releases/tag/v0.3.0
 [0.2.1]: https://github.com/kjanat/actionlint-plugin-shellcheck/releases/tag/v0.2.1
