@@ -7,7 +7,7 @@
 
 ## [0.3.0] - 2026-11-07
 
-- Breaking change: require the host's `kjanat:actionlint-script/shell-script-inputs@0.3.0` interface. Older hosts reject this release. SC2153 and SC2154 now check scoped environment names without their values, instead of being disabled for every script. ([#14](https://github.com/kjanat/actionlint-plugin-shellcheck/pull/14))
+- This breaking change requires the host's `kjanat:actionlint-script/shell-script-inputs@0.3.0` interface. Older hosts reject this release. SC2153 and SC2154 now check scoped environment names without their values, instead of being disabled for every script. ([#14](https://github.com/kjanat/actionlint-plugin-shellcheck/pull/14))
 - Match environment names case-sensitively in Bash. On Windows, merged declarations retain the first spelling. ([#14](https://github.com/kjanat/actionlint-plugin-shellcheck/pull/14))
 
 ## [0.2.1] - 2026-11-02
@@ -16,7 +16,7 @@
 
 ## [0.2.0] - 2026-10-29
 
-- Breaking change: require `kjanat:actionlint/analyzer@0.2.0`. Hosts limited to version `0.1.0` reject this release.
+- This breaking change requires `kjanat:actionlint/analyzer@0.2.0`. Hosts limited to version `0.1.0` reject this release.
 - Request shell preparation by script occurrence, as required by the `0.2.0` `prepared-scripts` import.
 
 ## [0.1.2] - 2026-10-24

@@ -74,12 +74,12 @@ pub fn descriptor() -> Descriptor {
         provider: "rshellcheck".to_string(),
         recommended: true,
         explanation: concat!(
-            "Checks supported shell snippets with rshellcheck. ",
-            "External sources require read-only host grants. The plugin never reads rc files. Fixes require review."
+            "Run rshellcheck on supported shell scripts. ",
+            "The host must grant read-only access to source files. The plugin does not read rc files. Review fixes before applying them."
         )
         .to_string(),
         help: concat!(
-            "Configure shell, disable, enable, extended-analysis and severity under ",
+            "Set shell, disable, enable, extended-analysis and severity in ",
             "lint.rules.plugins.shellcheck.options."
         )
         .to_string(),

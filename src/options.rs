@@ -29,23 +29,23 @@ pub fn schema() -> serde_json::Value {
         "additionalProperties": false,
         "properties": {
             "shell": {
-                "description": "Override an already supported shell's inferred dialect, unless a header directive selects one.",
+                "description": "Select the dialect for a supported shell. A header directive takes precedence.",
                 "type": "string",
                 "enum": ["bash", "sh", "dash", "ksh", "busybox"]
             },
             "disable": {
-                "description": "Diagnostic codes to suppress, with optional SC prefix. Use enable for optional-check names.",
+                "description": "Exclude diagnostic codes, with or without the SC prefix. Use enable for optional checks.",
                 "examples": [["SC2086", "2154"]],
                 "type": "array",
                 "items": {"type": "string", "pattern": "^(SC)?[0-9]+$"}
             },
             "enable": {
-                "description": "Optional checks to activate by exact name, or all. Numeric diagnostic codes are not accepted.",
+                "description": "Enable optional checks by exact name, or use all. Numeric diagnostic codes are not valid here.",
                 "examples": [["require-variable-braces", "clarify-parse-errors"], ["all"]],
                 "type": "array",
                 "items": {"type": "string", "enum": optional_names}
             },
-            "external-sources": {"type": "boolean", "description": "Follow sources only within read-only filesystem grants supplied by the host."},
+            "external-sources": {"type": "boolean", "description": "Follow source files in directories the host grants read-only access to."},
             "source-path": {"type": "array", "items": {"type": "string"}},
             "extended-analysis": {"type": "boolean"},
             "severity": {"type": "string", "enum": ["error", "warning", "info", "style"]}

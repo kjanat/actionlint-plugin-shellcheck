@@ -1,6 +1,6 @@
 # actionlint-plugin-shellcheck
 
-Run ShellCheck on actionlint's workflow `run:` steps with a WebAssembly component powered by
+Run ShellCheck on actionlint's workflow `run:` steps with a WebAssembly component built with
 [rshellcheck](https://github.com/kjanat/shellcheck-rs). No ShellCheck executable or network connection is required.
 The component declares the `shellcheck` rule through `kjanat:actionlint/analyzer@0.2.0`. actionlint creates a new
 instance for each document.
@@ -65,7 +65,7 @@ The host passes an optional JSON object. All keys are optional.
 | `source-path`       | Set source search directories. The host translates them through its granted filesystem roots.          |
 
 Unknown keys and invalid values stop analysis and produce an error naming the key. `disable` accepts diagnostic
-numbers; `enable` accepts optional-check names. The plugin rejects misspelled names and numeric enable selectors.
+numbers. `enable` accepts optional-check names. The plugin rejects misspelled names and numeric enable selectors.
 The generated schema and runtime validator both use rshellcheck's typed optional-check catalogue. The package includes
 the schema as `artifacts/schema.json`. Setting a dialect does not turn an unsupported runtime shell into a shell script.
 
