@@ -5,7 +5,7 @@ go 1.27.0
 toolchain go1.27.4
 
 require (
-	actionlint.kjanat.dev/v2 v2.0.0-20261108032339-a79d3522b436
+	actionlint.kjanat.dev/v2 v2.0.0-20261109061640-ab420b66fb98
 	github.com/kjanat/wacogo v0.2.3
 )
 
@@ -13,6 +13,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.10.3 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/fatih/color v1.19.0 // indirect
+	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/itchyny/gojq v0.12.19 // indirect
 	github.com/itchyny/timefmt-go v0.1.8 // indirect
