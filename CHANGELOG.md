@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 - Rewrite the rule explanation and option descriptions. ([#22](https://github.com/kjanat/actionlint-plugin-shellcheck/pull/22))
-- Use rshellcheck-core `1.1.0` from crates.io.
+- Use rshellcheck-core `1.1.0` from crates.io. ([#29](https://github.com/kjanat/actionlint-plugin-shellcheck/pull/29))
 
 ## [0.3.1] - 2026-11-08
 
