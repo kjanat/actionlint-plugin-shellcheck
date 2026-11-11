@@ -291,7 +291,8 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 [[package]]
 name = "rshellcheck-core"
 version = "1.1.0"
-source = "git+https://github.com/kjanat/shellcheck-rs?rev=42dc71683d2e3c46562f2d3b74b0996e5275ca1d#42dc71683d2e3c46562f2d3b74b0996e5275ca1d"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3078f6c31a20c314f75a8757e36f6e2babfe91888fac57a6f1e5e1a00d13b19d"
 dependencies = [
  "im-rc",
  "reblessive",
