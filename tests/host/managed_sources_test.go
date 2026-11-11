@@ -130,6 +130,7 @@ tools:
 			}
 			workflow := filepath.Join(root, "ci.yml")
 			content := fmt.Sprintf(`on: push
+permissions: {}
 jobs:
   test:
     runs-on: ubuntu-latest

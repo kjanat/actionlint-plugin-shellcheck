@@ -1,5 +1,5 @@
-actionlint.kjanat.dev/v2 v2.0.0-20261108032339-a79d3522b436 h1:pxiMhvii1t57NPa84BKIeH+ZGpWMziKka0M/B4CTQVM=
-actionlint.kjanat.dev/v2 v2.0.0-20261108032339-a79d3522b436/go.mod h1:oi/e5a0jyRkhIq3bTFz/HB7mnmb7bgJvflsHesA3KeY=
+actionlint.kjanat.dev/v2 v2.0.0-20261109061640-ab420b66fb98 h1:wf8TEtS5mIf3GPcpKrz76PvrVLwJmQyhBZY2Aa6Em8s=
+actionlint.kjanat.dev/v2 v2.0.0-20261109061640-ab420b66fb98/go.mod h1:RCV3SXrujLn7sjptP0GXprP6B1WA2pZw1FabWo7M45A=
 github.com/BurntSushi/toml v1.6.0 h1:dRaEfpa2VI55EwlIW72hMRHdWouJeRF7TPYhI+AUQjk=
 github.com/BurntSushi/toml v1.6.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
 github.com/ProtonMail/go-crypto v1.5.2 h1:cucYnvqcY7UOXVD//mSyjeaPY0SSN3v5cDkYPxumINk=
@@ -17,6 +17,8 @@ github.com/fatih/color v1.19.0 h1:Zp3PiM21/9Ld6FzSKyL5c/BULoe/ONr9KlbYVOfG8+w=
 github.com/fatih/color v1.19.0/go.mod h1:zNk67I0ZUT1bEGsSGyCZYZNrHuTkJJB+r6Q9VuMi0LE=
 github.com/go-quicktest/qt v1.102.0 h1:HSQxCeh5YZH3EL3W39ixjtyaEhcWSXQHtHnMBzSs474=
 github.com/go-quicktest/qt v1.102.0/go.mod h1:p4lGIVX+8Wa6ZPNDvqcxq36XpUDLh42FLetFU7odllI=
+github.com/go-viper/mapstructure/v2 v2.5.0 h1:vM5IJoUAy3d7zRSVtIwQgBj7BiWtMPfmPEgAXnvj1Ro=
+github.com/go-viper/mapstructure/v2 v2.5.0/go.mod h1:oJDH3BJKyqBA2TXFhDsKDGDTlndYOZ6rGS0BRZIxGhM=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=

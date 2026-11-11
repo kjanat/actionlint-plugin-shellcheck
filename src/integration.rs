@@ -29,8 +29,7 @@ impl Guest for Plugin {
         Descriptor {
             tool: "shellcheck".to_string(),
             contract: "kjanat:actionlint/shellcheck-config@0.1.0".to_string(),
-            configuration_schema: actionlint_extension_api::SHELLCHECK_CONFIGURATION_SCHEMA
-                .to_string(),
+            configuration_schema: include_str!("configuration.schema.json").to_string(),
         }
     }
 

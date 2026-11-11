@@ -91,6 +91,9 @@ name.
 Install the Rust toolchain specified in `rust-toolchain.toml` and its `wasm32-wasip2` target. `rustup` installs the
 target on first use. The host tests also require Go 1.27.
 
+Cargo and the Go host tests pin the same actionlint revision in `Cargo.toml`, `Cargo.lock` and `tests/host/go.mod`.
+The plugin embeds the integration schema from `src/configuration.schema.json`.
+
 ```sh
 cargo build --locked --release --lib --target wasm32-wasip2
 cargo run --locked --features package --bin package -- target/wasm32-wasip2/release/actionlint_plugin_shellcheck.wasm artifacts
