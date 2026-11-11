@@ -18,7 +18,7 @@ required-features = ["package"]
 
 [dependencies]
 actionlint-extension-api = { path = "vendor/actionlint-extension-api", features = ["script-environments", "tool-integration"] }
-rshellcheck-core         = { git = "https://github.com/kjanat/shellcheck-rs", rev = "42dc71683d2e3c46562f2d3b74b0996e5275ca1d" }
+rshellcheck-core         = "1.1.0"
 serde                    = { version = "1", features = ["derive"] }
 serde_json               = "1"
 
