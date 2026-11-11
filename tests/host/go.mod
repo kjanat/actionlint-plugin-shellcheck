@@ -2,7 +2,7 @@ module actionlint.kjanat.dev/v2/plugins/shellcheck/hosttests
 
 go 1.27.0
 
-toolchain go1.27.3
+toolchain go1.27.4
 
 require (
 	actionlint.kjanat.dev/v2 v2.0.0-20261108032339-a79d3522b436
