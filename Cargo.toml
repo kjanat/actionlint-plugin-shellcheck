@@ -17,7 +17,7 @@ path              = "src/bin/package.rs"
 required-features = ["package"]
 
 [dependencies]
-actionlint-extension-api = { git = "https://github.com/kjanat/actionlint", rev = "ab420b66fb98af9d993c176e97506ecec9d3a396", features = [
+actionlint-extension-api = { git = "https://github.com/kjanat/actionlint", branch = "go-identity-model", version = "0.2", features = [
   "script-environments",
   "tool-integration"
 ] }
