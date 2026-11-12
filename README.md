@@ -91,7 +91,8 @@ name.
 Install the Rust toolchain specified in `rust-toolchain.toml` and its `wasm32-wasip2` target. `rustup` installs the
 target on first use. The host tests also require Go 1.27.
 
-Cargo and the Go host tests pin the same actionlint revision in `Cargo.toml`, `Cargo.lock` and `tests/host/go.mod`.
+The Rust SDK follows actionlint's `go-identity-model` branch. `Cargo.lock` pins the SDK commit, and
+`tests/host/go.mod` selects the same commit for the Go host tests.
 The plugin embeds the integration schema from `src/configuration.schema.json`.
 
 ```sh
@@ -103,11 +104,6 @@ Distribute `artifacts/plugin.wasm` with `metadata.json`, `schema.json`, `LICENSE
 preserves the component and prepends its `actionlint.plugin` discovery section. The same input produces identical bytes.
 The declaration uses the SHA-256 of the SDK's canonical analyzer WIT with LF line endings as its contract checksum.
 The runtime descriptor and static declaration share rule metadata. The component uses the analyzer ABI.
-
-The vendored SDK and Go host tests target actionlint commit `70c824363f307a5097e73531d18d00189cca6fe8`. The
-[snapshot manifest](vendor/actionlint-extension-api.snapshot.json) records the unmodified SDK's revision and hashes.
-A build does not need a sibling actionlint checkout or a module replacement. Update the WIT, JSON profiles, Rust
-bindings and Go host dependency together.
 
 The SDK provides guest bindings, the component export macro and native packaging. This repository provides the plugin's
 descriptor, Cargo identity, engine, capabilities and license. The SDK's `source-annotations` feature imports YAML

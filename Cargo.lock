@@ -5,7 +5,7 @@ version = 4
 [[package]]
 name = "actionlint-extension-api"
 version = "0.2.0"
-source = "git+https://github.com/kjanat/actionlint?rev=ab420b66fb98af9d993c176e97506ecec9d3a396#ab420b66fb98af9d993c176e97506ecec9d3a396"
+source = "git+https://github.com/kjanat/actionlint?branch=go-identity-model#a8e4f4920b2f2bb5cc65b02f91aa8adf64981fa7"
 dependencies = [
  "serde",
  "serde_json",
