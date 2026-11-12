@@ -18,6 +18,7 @@ jobs:
           echo $FLAGS
           echo $STABLE
         working-directory: scripts
+permissions: {}
 `;
 const source = "FLAGS='one two'\nSTABLE=one\n";
 const directives = `on: push
@@ -32,6 +33,7 @@ jobs:
       - run: | # shellcheck disable=SC2086
           echo $BLOCK
       - run: echo $VISIBLE # shellcheck disable=SC2034
+permissions: {}
 `;
 const invalidDirective = `on: push
 jobs:
@@ -39,6 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo ok # shellcheck shell=unknown
+permissions: {}
 `;
 
 export async function prepare({
