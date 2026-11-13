@@ -5,7 +5,7 @@ go 1.27.0
 toolchain go1.27.4
 
 require (
-	actionlint.kjanat.dev/v2 v2.0.0-20261112131415-8aab6636edad
+	actionlint.kjanat.dev/v2 v2.0.0-20261113011238-9c5587e4aa15
 	github.com/kjanat/wacogo v0.2.3
 )
 
@@ -18,7 +18,7 @@ require (
 	github.com/itchyny/gojq v0.12.19 // indirect
 	github.com/itchyny/timefmt-go v0.1.8 // indirect
 	github.com/kjanat/go-yaml/v4 v4.0.0-rc.7 // indirect
-	github.com/kjanat/wazero v1.11.1 // indirect
+	github.com/kjanat/wazero v1.12.1 // indirect
 	github.com/mattn/go-colorable v0.1.16 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mattn/go-runewidth v0.0.31 // indirect
