@@ -296,9 +296,9 @@ checksum = "d6f6ff9a378485b298a5286656da665ba74413d36db0979633275d2e708145d4"
 
 [[package]]
 name = "rshellcheck-core"
-version = "1.1.0"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3078f6c31a20c314f75a8757e36f6e2babfe91888fac57a6f1e5e1a00d13b19d"
+checksum = "80fde086b47d847f3718bd89743002f342f52ffbe9ef5eb03e844fc41ce86260"
 dependencies = [
  "im-rc",
  "reblessive",
