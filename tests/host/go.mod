@@ -6,7 +6,7 @@ toolchain go1.27.4
 
 require (
 	actionlint.kjanat.dev/v2 v2.0.0-20261114001937-06d8fb51c0ca
-	github.com/kjanat/wacogo v0.2.3
+	github.com/kjanat/wacogo v0.3.9
 )
 
 require (
@@ -35,7 +35,7 @@ require (
 	golang.org/x/mod v0.42.0 // indirect
 	golang.org/x/net v0.62.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
-	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 	mvdan.cc/sh/v3 v3.14.1 // indirect
 )
